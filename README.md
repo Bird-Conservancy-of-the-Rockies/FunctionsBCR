@@ -3,13 +3,13 @@
 
 ## Package contents
 ### Analysis
-```BCI``` Given a vector of MCMC posterior estimates for a parameter, provides a summary of the posterior median and credible interval\
-```logit``` Converts a probability to the logit scale\
-```expit``` Converts a logit probability to the probability scale\
-```RunNimbleParallel``` Wrapper function for fitting a Bayesian model in Nimble while implementing parallel processing and automated checking of convergence (Rhat) and sampling (n.effective) criteria\
+```BCI``` Given a vector of MCMC posterior estimates for a parameter, provides a summary of the posterior median and credible interval<br>
+```logit``` Converts a probability to the logit scale<br>
+```expit``` Converts a logit probability to the probability scale<br>
+```RunNimbleParallel``` Wrapper function for fitting a Bayesian model in Nimble while implementing parallel processing and automated checking of convergence (Rhat) and sampling (n.effective) criteria<br>
 
 ### Data processing
-```Impute_missing_covs_rf``` Imputes missing covariate values using a random forest informed by existing values of other covariates (maintains correlation structure of a set of covariates)\
-```SumStats_df``` Generates summary statistics for a given set of covariates\
-```tssr``` Generates time since sunrise value provided time at a given geographic coordinate\
-```VIF``` Generates variance inflation factors often used to screen covariates to limit multicollinearity in regression analysis\
+```Impute_missing_covs_rf``` Imputes missing covariate values using a random forest informed by existing values of other covariates (maintains correlation structure of a set of covariates)<br>
+```SumStats_df``` Generates summary statistics for a given set of covariates<br>
+```tssr``` Generates time since sunrise value provided time at a given geographic coordinate<br>
+```VIF``` Generates variance inflation factors often used to screen covariates to limit multicollinearity in regression analysis<br>
