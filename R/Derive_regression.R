@@ -1,5 +1,4 @@
 Derive_regression <- function(y, x) {
-  require(MASS)
   if(length(x) != dim(y)[2]) stop("Length of x must equal ncol(y) for 'Derive_regression'.")
   nsamp <- dim(y)[1]
   nx <- length(x)
