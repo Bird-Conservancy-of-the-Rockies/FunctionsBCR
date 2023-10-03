@@ -10,7 +10,7 @@ mcmcList_to_mcmcOutput <- function(mcmcList) {
   sumTab <- sumTab %>%
     as_tibble() %>%
     mutate(Parameter = row.names(sumTab)) %>%
-    select(Parameter, mean:n.eff)
+    dplyr::select(Parameter, mean:n.eff)
   mcmcList <- list(mcmcOutput = mcmcList, summary = sumTab)
   return(mcmcList)
 }
