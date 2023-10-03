@@ -15,3 +15,4 @@ tssr(lat,long,dateTime)
 \author{
 Adam Green, Quresh Latif
 }
+\note{R packages required: suncalc, lutz, sf}
