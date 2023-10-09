@@ -80,7 +80,7 @@ RunNimbleParallel <-
     sumTab <- sumTab %>%
       as_tibble() %>%
       mutate(Parameter = row.names(sumTab)) %>%
-      select(Parameter, mean:f)
+      dplyr::select(Parameter, mean:f)
     
     if(length(par.ignore.Rht) == 0) {
       mxRht <- sumTab %>% pull(Rhat) %>% max() # na.rm = T
@@ -200,7 +200,7 @@ RunNimbleParallel <-
       sumTab <- sumTab %>%
         as_tibble() %>%
         mutate(Parameter = row.names(sumTab)) %>%
-        select(Parameter, mean:f)
+        dplyr::select(Parameter, mean:f)
       if(length(par.ignore.Rht) == 0) {
         mxRht <- sumTab %>% pull(Rhat) %>% max() # na.rm = T
         mn.neff <- sumTab %>% pull(n.eff) %>% min() # na.rm = T
