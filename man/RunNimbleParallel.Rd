@@ -40,7 +40,11 @@
   \item{check.progress}{The run number to check whether max Rhat < 2 and has improved since the initial run. If this criterion is not met, RunNimbleParallel will quit with the error "Insufficient progress towards convergence...." Default is to not check progress in this manner.}
   \item{max.tries}{The maximum number of runs, after which RunNimbleParallel will quit with the error "Maximum number of runs reached...." Default is to not set any constraint on MCMC chain length.}
 }
-\value{If assigned to object and rtrn.model = T, model output as returned by mcmcOutput::mcmcOutput is returned. Else, model output is saved to file.}
+\value{If assigned to object in global environment and rtrn.model = T, model output is returned. Else, model output is saved to file. Regardless, returned value consists of a list with three elements:
+  \item{mcmcOutput}{posterior samples as returned by mcmcOutput::mcmcOutput}
+  \item{summary}{data frame containing summaries of posterior estimates and convergence criteria (Rhat and n_effective) for all parameters in mcmcOutput}
+  \item{mcmc.info}{A vector with elemets: nchains = number of MCMC sampling chains, niterations = realized chain length, burnin = realized length of each chain discarded as burn-in, nthin = realized thinning expressed as the chain length before a sample is retained.}
+  }
 \author{
   Quresh S. Latif, Bird Conservancy of the Rockies
 }
