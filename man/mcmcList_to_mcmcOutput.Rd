@@ -3,7 +3,7 @@
 \title{Converts mcmcList to mcmcOutput}
 \description{Converts mcmcList object (i.e., list of matrices containing mcmc samples from parallel chains) to a list with two elements, an mcmcOutput object and a summary table of all parameters.}
 \usage{
-str_detect_any(mcmcList)
+mcmcList_to_mcmcOutput(mcmcList)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
