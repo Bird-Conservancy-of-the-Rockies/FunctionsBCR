@@ -82,24 +82,17 @@ RunNimbleParallel <-
       mutate(Parameter = row.names(sumTab)) %>%
       dplyr::select(Parameter, mean:f)
     
-    if(length(par.ignore.Rht) == 0) {
-      mxRht <- sumTab %>% pull(Rhat) %>% max() # na.rm = T
-      mn.neff <- sumTab %>% pull(n.eff) %>% min() # na.rm = T
-    } else {
+    if(length(par.ignore.Rht) > 0) {
       if(length(par.dontign.Rht) == 0) {
         ind.ignore <- which(str_detect_any(sumTab$Parameter, par.ignore.Rht))
       } else {
         ind.ignore <- which(str_detect_any(sumTab$Parameter, par.ignore.Rht) &
                               !str_detect_any(sumTab$Parameter, par.dontign.Rht))
       }
-      if(length(ind.ignore) > 0) {
-        mxRht <- sumTab %>% slice(-ind.ignore) %>% pull(Rhat) %>% max() # na.rm = T
-        mn.neff <- sumTab %>% slice(-ind.ignore) %>% pull(n.eff) %>% min() # na.rm = T
-      } else {
-        mxRht <- sumTab %>% pull(Rhat) %>% max() # na.rm = T
-        mn.neff <- sumTab %>% pull(n.eff) %>% min() # na.rm = T
-      }
+      if(length(ind.ignore) > 0) sumTab <- sumTab %>% slice(-ind.ignore)
     }
+    mxRht <- sumTab %>% pull(Rhat) %>% max() # na.rm = T
+    mn.neff <- sumTab %>% pull(n.eff) %>% min() # na.rm = T
     if(is.na(mxRht) | is.na(mn.neff)) {
       write.csv(sumTab, "Model_summary.csv")
       stop("Error: One or more parameters is not being sampled. Check data, initial values, etc., and try again. See 'Model_summary.csv' for parameters missing Rhat or n.eff.")
@@ -201,24 +194,17 @@ RunNimbleParallel <-
         as_tibble() %>%
         mutate(Parameter = row.names(sumTab)) %>%
         dplyr::select(Parameter, mean:f)
-      if(length(par.ignore.Rht) == 0) {
-        mxRht <- sumTab %>% pull(Rhat) %>% max() # na.rm = T
-        mn.neff <- sumTab %>% pull(n.eff) %>% min() # na.rm = T
-      } else {
+      if(length(par.ignore.Rht) > 0) {
         if(length(par.dontign.Rht) == 0) {
           ind.ignore <- which(str_detect_any(sumTab$Parameter, par.ignore.Rht))
         } else {
           ind.ignore <- which(str_detect_any(sumTab$Parameter, par.ignore.Rht) &
                                 !str_detect_any(sumTab$Parameter, par.dontign.Rht))
         }
-        if(length(ind.ignore) > 0) {
-          mxRht <- sumTab %>% slice(-ind.ignore) %>% pull(Rhat) %>% max() # na.rm = T
-          mn.neff <- sumTab %>% slice(-ind.ignore) %>% pull(n.eff) %>% min() # na.rm = T
-        } else {
-          mxRht <- sumTab %>% pull(Rhat) %>% max() # na.rm = T
-          mn.neff <- sumTab %>% pull(n.eff) %>% min() # na.rm = T
-        }
+        if(length(ind.ignore) > 0) sumTab <- sumTab %>% slice(-ind.ignore)
       }
+      mxRht <- sumTab %>% pull(Rhat) %>% max() # na.rm = T
+      mn.neff <- sumTab %>% pull(n.eff) %>% min() # na.rm = T
       Rht.fuzzy <- 1 # Putting in at least one value to avoid error later....
       if(length(par.fuzzy.track.Rht) > 0) {
         for(p in 1:length(par.fuzzy.track.Rht)) {
