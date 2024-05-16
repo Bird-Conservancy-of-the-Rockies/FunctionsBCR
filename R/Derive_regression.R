@@ -4,16 +4,19 @@ Derive_regression <- function(y, x, propagate_uncertainty = TRUE) {
   nx <- length(x)
   intercept <- slope <- numeric(length = nsamp)
   for(i in 1:nsamp) {
-    md <- lm(y[i, ] ~ x)
-    mn <- coefficients(md)
     if(propagate_uncertainty) {
+      md <- lm(y[i, ] ~ x)
+      mn <- coefficients(md)
       vc <- vcov(md)
       cfs <- MASS::mvrnorm(1, mn, vc)
+      m <- cfs["x"]
+      b <- cfs["(Intercept)"]
     } else {
-      cfs <- mn
+      m <- sum((x - mean(x)) * (y[i,] - mean(y[i,]))) / sum((x - mean(x)) ^ 2)
+      b <- (sum(y[i,]) - m * sum(x)) / length(y)
     }
-    intercept[i] <- cfs["(Intercept)"]
-    slope[i] <- cfs["x"]
+    slope[i] <- m
+    intercept[i] <- b
   }
   return(list(intercept = intercept,
               slope = slope))
