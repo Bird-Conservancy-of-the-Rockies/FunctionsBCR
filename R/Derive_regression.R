@@ -13,7 +13,7 @@ Derive_regression <- function(y, x, propagate_uncertainty = TRUE) {
       b <- cfs["(Intercept)"]
     } else {
       m <- sum((x - mean(x)) * (y[i,] - mean(y[i,]))) / sum((x - mean(x)) ^ 2)
-      b <- (sum(y[i,]) - m * sum(x)) / length(y)
+      b <- (sum(y[i,]) - m * sum(x)) / length(y[i, ])
     }
     slope[i] <- m
     intercept[i] <- b
