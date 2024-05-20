@@ -1,4 +1,4 @@
-tssr <- function (lat, long, dateTime) {
+tssr <- function (lat, long, dateTime, format = "") {
   require(suncalc)
   require(lutz)
   require(sf)
@@ -17,7 +17,7 @@ tssr <- function (lat, long, dateTime) {
                       lon = long[ind],
                       date = as.Date(date[ind], tz = z))
     srt <- getSunlightTimes(data = dat, keep = "sunrise", tz = z)$sunrise
-    tssr[ind] <- as.numeric(difftime(as.POSIXlt(dateTime[ind], tz = z), 
+    tssr[ind] <- as.numeric(difftime(as.POSIXlt(dateTime[ind], tz = z, format = format), 
                                      srt, units = "mins"))
   }
   return(tssr = tssr)

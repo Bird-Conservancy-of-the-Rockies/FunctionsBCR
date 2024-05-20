@@ -10,6 +10,7 @@ tssr(lat,long,dateTime)
   \item{lat}{latitude as decimal degrees with negative values representing southern locations.}
   \item{long}{longitude as decimal degrees with negative values representing western locations.}
   \item{dateTime}{date and time as a character e.g., '2009-04-29 06:30:00'.}
+  \item{format}{Format for 'dateTime' as specified for base::as.POSIXlt and ultimately base::strptime.}
 }
 \value{A value or vector matching the dimensions of dateTime representing the number of minutes from sunrise.}
 \author{
