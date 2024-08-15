@@ -39,7 +39,7 @@ RunNimbleParallel <-
       library(coda)
       model <- nimbleModel(code = model, name = "model",
                            constants = constants, data = data.inp,
-                           inits = init)
+                           inits = init, calculate = FALSE)
       Cmodel <- compileNimble(model)
       modelConf <- configureMCMC(model, thin = nt)
       # Example code for switching out samplers:
