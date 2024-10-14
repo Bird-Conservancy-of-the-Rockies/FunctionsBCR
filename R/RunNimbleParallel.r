@@ -79,7 +79,7 @@ RunNimbleParallel <-
       }
       sumTab <- mod.check$s %>%
         as_tibble() %>%
-        mutate(Parameter = row.names(sumTab)) %>%
+        mutate(Parameter = row.names(mod.check$s)) %>%
         dplyr::select(Parameter, mean:f)
       mod <- list(mcmcOutput = mod.out$out, summary = sumTab, mcmc.info = mcmc.info)
       if(sav.model) R.utils::saveObject(mod, mod.nam)
