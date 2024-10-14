@@ -42,10 +42,10 @@ RunNimbleParallel <-
     con = str_c(dump.path, "/ModRunScript.R"))
     #___________________________________________________________________________#
     proc <- process$new(command = "parallel",
-                        args = c("Rscript", "ModRunScript.R",
+                        args = c("Rscript", eval(str_c(dump.path, "/ModRunScript.R")),
                                  "{}",
                                  eval(dump.path),
-                                 "NimbleObjects.RData",
+                                 eval(str_c(dump.path, "/NimbleObjects.RData")),
                                  ":::",
                                  1:nc))
     proc
