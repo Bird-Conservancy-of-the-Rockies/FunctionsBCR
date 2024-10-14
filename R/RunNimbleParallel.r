@@ -69,7 +69,7 @@ RunNimbleParallel <-
         proc$kill_tree()
         sumTab <- mod.check$s %>%
           as_tibble() %>%
-          mutate(Parameter = row.names(sumTab)) %>%
+          mutate(Parameter = row.names(mod.check$s)) %>%
           dplyr::select(Parameter, mean:f)
         write.csv(sumTab, str_c("Model_summary_PID",proc$get_pid(),".csv"))
         stop(str_c("Error: One or more parameters is not being sampled.",
