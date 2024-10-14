@@ -1,7 +1,7 @@
 checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
                         par.ignore = c(), par.dontign = c(),
                         spit.summary = FALSE) {
-  s <- summary(mcmcOutput, n.eff = TRUE, verbose = FALSE)
+  s <- summary(mcmcOutput, MCEpc = T, Rhat = T, n.eff = T, f = T, overlap0 = T, verbose = FALSE)
   if(length(par.ignore) > 0) {
     if(length(par.dontign) == 0) {
       ind.ignore <- which(str_detect_any(s$Parameter, par.ignore))
