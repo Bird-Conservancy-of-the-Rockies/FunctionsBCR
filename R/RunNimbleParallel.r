@@ -52,7 +52,7 @@ RunNimbleParallel <-
     mod.check.result <- FALSE
     nchecks <- 1
     while(!any(str_detect(list.files(dump.path), "mod_chn"))) {Sys.sleep(60)} # Wait until proc has started writing to file before going on.
-    while(ifelse(is.null(max.tries), !mod.check, !mod.check & nchecks < max.tries)) {
+    while(ifelse(is.null(max.tries), !mod.check.result, !mod.check.result & nchecks < max.tries)) {
       Sys.sleep(check.freq)
       
       mod.out <- gatherNimble(read.path = dump.path, burnin = nb, ni.block = ni, max.samples.saved = max.samples.saved)
