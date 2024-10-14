@@ -1,6 +1,6 @@
 RunNimbleParallel <-
   function(model.path, inits, data, constants, parameters,
-           par.ignore.Rht = c(), par.dontign.Rht = c(),
+           par.ignore = c(), par.dontign = c(),
            nc = 2, ni = 2000, nb = 0.5, nt = 10, mod.nam = "mod",
            max.samples.saved = 10000, rtrn.model = F, sav.model = T,
            Rht.required = 1.1, neff.required = 100,
@@ -16,7 +16,7 @@ RunNimbleParallel <-
     require(mcmcOutput)
     # Also requires `parallel` package in Linux.
     if(!dir.exists(dump.path)) dir.create(dump.path)
-    save(list = c("model.path", "constants", "data", "inits", "parameters", "ni", "nt"), file = "NimbleObjects.RData")
+    save(list = c("model.path", "constants", "data", "inits", "parameters", "ni", "nt"), file = str_c(dump.path, "/NimbleObjects.RData"))
     #[Create R script for kicking off nimble run here]. Call it "ModRunScript.R"
     #___________________________________________________________________________#
     writeLines(text = c(
@@ -39,7 +39,7 @@ RunNimbleParallel <-
       "mod <- runNimble(comp.mcmc = mod$comp.mcmc, n.iter = ni, dump.file.path = dump.file.path)",
       "}"
     ),
-    con = "ModRunScript.R")
+    con = str_c(dump.path, "/ModRunScript.R"))
     #___________________________________________________________________________#
     proc <- process$new(command = "parallel",
                         args = c("Rscript", "ModRunScript.R",
@@ -49,51 +49,51 @@ RunNimbleParallel <-
                                  ":::",
                                  1:nc))
     proc
-    mod.check <- FALSE
+    mod.check.result <- FALSE
     nchecks <- 1
-    while(length(list.files(dump.path)) == 0) {Sys.sleep(60)} # Wait until proc has started writing to file before going on.
+    while(!any(str_detect(list.files(dump.path), "mod_chn"))) {Sys.sleep(60)} # Wait until proc has started writing to file before going on.
     while(ifelse(is.null(max.tries), !mod.check, !mod.check & nchecks < max.tries)) {
       Sys.sleep(check.freq)
       
-      mod.out <- gatherNimble(dump.path, burnin = nb, ni.block = ni, max.samples.saved = max.samples.saved)
-      mod.check <- checkNimble(mod.out, Rht.required = Rht.required, neff.required = neff.required,
-                               par.ignore.Rht = par.ignore.Rht, par.dontign.Rht = par.dontign.Rht,
+      mod.out <- gatherNimble(read.path = dump.path, burnin = nb, ni.block = ni, max.samples.saved = max.samples.saved)
+      mod.check <- checkNimble(mod.out$out, Rht.required = Rht.required, neff.required = neff.required,
+                               par.ignore = par.ignore, par.dontign = par.dontign,
                                spit.summary = TRUE)
-      nblks <- nblks
-      thin.additional <- gatherNimble.thin.rate
+      mod.check.result <- mod.check$result
+      nblks <- mod.out$nblks
+      thin.additional <- mod.out$additional.thin.rate
       mcmc.info <- c(nchains = nc, niterations = ni*nblks,
-                     burnin = ifelse(nb<1, nb*ni*nblks, nb), nthin = nt*thin.additional)
-      if(any(is.na(sumTab$Rhat)) | any(is.na(sumTab$n.eff))) {
+                     burnin = ifelse(nb<1, nb*ni*nblks, nb),
+                     nthin = nt*thin.additional)
+      if(any(is.na(mod.check$s$Rhat)) | any(is.na(mod.check$s$n.eff))) {
         proc$kill_tree()
-        write.csv(sumTab, str_c("Model_summary_PID",proc$get_pid(),".csv"))
+        write.csv(mod.check$s, str_c("Model_summary_PID",proc$get_pid(),".csv"))
         stop(str_c("Error: One or more parameters is not being sampled.",
                    " Check data, initial values, etc., and try again.",
                    " See 'Model_summary_PID",proc$get_pid(),
                    ".csv' for parameters missing Rhat or n.eff."))
       }
-      mod <- list(mcmcOutput = mod.out, summary = sumTab, mcmc.info = mcmc.info)
+      mod <- list(mcmcOutput = mod.out$out, summary = mod.check$s, mcmc.info = mcmc.info)
       if(sav.model) R.utils::saveObject(mod, mod.nam)
       if(rtrn.model) assign("mod", mod.nam, envir = .GlobalEnv)
-      if(!mod.check) {
-        print(str_c("At check = ", nchecks, ". Max Rhat = ", max(sumTab$Rhat),
-                    " and min neff = ", min(sumTab$n.eff)))
+      if(!mod.check.result) {
+        print(str_c("At check = ", nchecks, ". Max Rhat = ", max(mod.check$s$Rhat),
+                    " and min neff = ", min(mod.check$s$n.eff)))
       } else {
-        print(str_c("Model complete at check = ", nchecks, ". Max Rhat = ", max(sumTab$Rhat),
-                    " and min neff = ", min(sumTab$n.eff)))
+        print(str_c("Model complete at check = ", nchecks, ". Max Rhat = ", max(mod.check$s$Rhat),
+                    " and min neff = ", min(mod.check$s$n.eff)))
       }
       nchecks <- nchecks + 1
     }
     proc$kill_tree()
-    if(!mod.check) {
+    if(!mod.check.result) {
       warn.message <- str_c("Rhat did not decrease after ", nchecks,
                             " checks. Model abandoned before reaching convergence targets.")
-      mod <- list(mcmcOutput = mod.out, summary = sumTab, mcmc.info = mcmc.info,
+      mod <- list(mcmcOutput = mod.out$out, summary = mod.check$s, mcmc.info = mcmc.info,
                   warning = warn.message)
       if(sav.model) R.utils::saveObject(mod, mod.nam)
       if(rtrn.model) assign("mod", mod.nam, envir = .GlobalEnv)
     }
     unlink(dump.path, recursive = TRUE)
-    file.remove("ModRunScript.R")
-    file.remove("NimbleObjects.RData")
     gc(verbose = FALSE)
   }
