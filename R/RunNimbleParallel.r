@@ -67,21 +67,29 @@ RunNimbleParallel <-
                      nthin = nt*thin.additional)
       if(any(is.na(mod.check$s$Rhat)) | any(is.na(mod.check$s$n.eff))) {
         proc$kill_tree()
-        write.csv(mod.check$s, str_c("Model_summary_PID",proc$get_pid(),".csv"))
+        sumTab <- mod.check$s %>%
+          as_tibble() %>%
+          mutate(Parameter = row.names(sumTab)) %>%
+          dplyr::select(Parameter, mean:f)
+        write.csv(sumTab, str_c("Model_summary_PID",proc$get_pid(),".csv"))
         stop(str_c("Error: One or more parameters is not being sampled.",
                    " Check data, initial values, etc., and try again.",
                    " See 'Model_summary_PID",proc$get_pid(),
                    ".csv' for parameters missing Rhat or n.eff."))
       }
-      mod <- list(mcmcOutput = mod.out$out, summary = mod.check$s, mcmc.info = mcmc.info)
+      sumTab <- mod.check$s %>%
+        as_tibble() %>%
+        mutate(Parameter = row.names(sumTab)) %>%
+        dplyr::select(Parameter, mean:f)
+      mod <- list(mcmcOutput = mod.out$out, summary = sumTab, mcmc.info = mcmc.info)
       if(sav.model) R.utils::saveObject(mod, mod.nam)
       if(rtrn.model) assign("mod", mod.nam, envir = .GlobalEnv)
       if(!mod.check.result) {
-        print(str_c("At check = ", nchecks, ". Max Rhat = ", max(mod.check$s$Rhat),
-                    " and min neff = ", min(mod.check$s$n.eff)))
+        print(str_c("At check = ", nchecks, ". Max Rhat = ", max(sumTab$Rhat),
+                    " and min neff = ", min(sumTab$n.eff)))
       } else {
-        print(str_c("Model complete at check = ", nchecks, ". Max Rhat = ", max(mod.check$s$Rhat),
-                    " and min neff = ", min(mod.check$s$n.eff)))
+        print(str_c("Model complete at check = ", nchecks, ". Max Rhat = ", max(sumTab$Rhat),
+                    " and min neff = ", min(sumTab$n.eff)))
       }
       nchecks <- nchecks + 1
     }
@@ -89,7 +97,7 @@ RunNimbleParallel <-
     if(!mod.check.result) {
       warn.message <- str_c("Rhat did not decrease after ", nchecks,
                             " checks. Model abandoned before reaching convergence targets.")
-      mod <- list(mcmcOutput = mod.out$out, summary = mod.check$s, mcmc.info = mcmc.info,
+      mod <- list(mcmcOutput = mod.out$out, summary = sumTab, mcmc.info = mcmc.info,
                   warning = warn.message)
       if(sav.model) R.utils::saveObject(mod, mod.nam)
       if(rtrn.model) assign("mod", mod.nam, envir = .GlobalEnv)
