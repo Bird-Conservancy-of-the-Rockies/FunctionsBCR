@@ -67,20 +67,14 @@ RunNimbleParallel <-
                      nthin = nt*thin.additional)
       if(any(is.na(mod.check$s$Rhat)) | any(is.na(mod.check$s$n.eff))) {
         proc$kill_tree()
-        sumTab <- mod.check$s %>%
-          as_tibble() %>%
-          mutate(Parameter = row.names(mod.check$s)) %>%
-          dplyr::select(Parameter, mean:f)
+        sumTab <- mod.check$s
         write.csv(sumTab, str_c("Model_summary_PID",proc$get_pid(),".csv"))
         stop(str_c("Error: One or more parameters is not being sampled.",
                    " Check data, initial values, etc., and try again.",
                    " See 'Model_summary_PID",proc$get_pid(),
                    ".csv' for parameters missing Rhat or n.eff."))
       }
-      sumTab <- mod.check$s %>%
-        as_tibble() %>%
-        mutate(Parameter = row.names(mod.check$s)) %>%
-        dplyr::select(Parameter, mean:f)
+      sumTab <- mod.check$s
       mod <- list(mcmcOutput = mod.out$out, summary = sumTab, mcmc.info = mcmc.info)
       if(sav.model) R.utils::saveObject(mod, mod.nam)
       if(rtrn.model) assign("mod", mod.nam, envir = .GlobalEnv)
