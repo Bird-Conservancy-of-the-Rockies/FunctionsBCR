@@ -65,10 +65,19 @@ RunNimbleParallel <-
       mcmc.info <- c(nchains = nc, niterations = ni*nblks,
                      burnin = ifelse(nb<1, nb*ni*nblks, nb),
                      nthin = nt*thin.additional)
-      if(any(is.na(mod.check$s$Rhat)) | any(is.na(mod.check$s$n.eff))) {
+      sumTab.ignore <- mod.check$s
+      if(length(par.ignore) > 0) {
+        if(length(par.dontign) > 0) {
+          sumTab.ignore <- sumTab.ignore %>%
+            filter(str_detect(Parameter, par.ignore) & !str_detect(Parameter, par.dontign))
+        } else {
+          sumTab.ignore <- sumTab.ignore %>%
+            filter(str_detect(Parameter, par.ignore))
+        }
+      } 
+      if(any(is.na(sumTab.ignore$Rhat)) | any(is.na(sumTab.ignore$n.eff))) {
         proc$kill_tree()
-        sumTab <- mod.check$s
-        write.csv(sumTab, str_c("Model_summary_PID",proc$get_pid(),".csv"))
+        write.csv(sumTab.ignore, str_c("Model_summary_PID",proc$get_pid(),".csv"))
         stop(str_c("Error: One or more parameters is not being sampled.",
                    " Check data, initial values, etc., and try again.",
                    " See 'Model_summary_PID",proc$get_pid(),
