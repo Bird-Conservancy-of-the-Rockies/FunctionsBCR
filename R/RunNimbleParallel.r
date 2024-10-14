@@ -69,10 +69,10 @@ RunNimbleParallel <-
       if(length(par.ignore) > 0) {
         if(length(par.dontign) > 0) {
           sumTab.ignore <- sumTab.ignore %>%
-            filter(str_detect(Parameter, par.ignore) & !str_detect(Parameter, par.dontign))
+            filter(str_detect_any(Parameter, par.ignore) & !str_detect_any(Parameter, par.dontign))
         } else {
           sumTab.ignore <- sumTab.ignore %>%
-            filter(str_detect(Parameter, par.ignore))
+            filter(str_detect_any(Parameter, par.ignore))
         }
       } 
       if(any(is.na(sumTab.ignore$Rhat)) | any(is.na(sumTab.ignore$n.eff))) {
