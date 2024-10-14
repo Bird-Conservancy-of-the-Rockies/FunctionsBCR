@@ -4,7 +4,7 @@ RunNimbleParallel <-
            nc = 2, ni = 2000, nb = 0.5, nt = 10, mod.nam = "mod",
            max.samples.saved = 10000, rtrn.model = F, sav.model = T,
            Rht.required = 1.1, neff.required = 100,
-           check.freq = 60, max.tries = NULL, dump.path = "dump") {
+           check.freq = 10, max.tries = NULL, dump.path = "dump") {
     if(!rtrn.model & !sav.model) stop("There is no way for RunNimbleParallel to save output. Set either rtrn.model = TRUE or sav.model = TRUE.")
     if(nb < 1 & (ni - (ni * nb)) < 100) stop("Increase iterations (ni) or reduce burn-in. Too few samples for calculating Rhat.")
     if(nb >= 1 & (ni - nb) < 100) stop("Increase iterations (ni) or reduce burn-in. Too few samples for calculating Rhat.")
@@ -51,7 +51,7 @@ RunNimbleParallel <-
     proc
     mod.check.result <- FALSE
     nchecks <- 1
-    while(!any(str_detect(list.files(dump.path), "mod_chn"))) {Sys.sleep(60)} # Wait until proc has started writing to file before going on.
+    while(!any(str_detect(list.files(dump.path), "mod_chn"))) {Sys.sleep(10)} # Wait until proc has started writing to file before going on.
     while(ifelse(is.null(max.tries), !mod.check.result, !mod.check.result & nchecks < max.tries)) {
       Sys.sleep(check.freq)
       
