@@ -16,12 +16,11 @@ RunNimbleParallel <-
     require(mcmcOutput)
     # Also requires `parallel` package in Linux.
     if(!dir.exists(dump.path)) dir.create(dump.path)
-    save(list = c("model.path", "constants", "data", "inits", "parameters", "ni", "nt"), file = str_c(dump.path, "/NimbleObjects.RData"))
+    save(list = c("model.path", "constants", "data", "inits", "parameters", "ni", "nt"), file = paste0(dump.path, "/NimbleObjects.RData"))
     #[Create R script for kicking off nimble run here]. Call it "ModRunScript.R"
     #___________________________________________________________________________#
     writeLines(text = c(
       "require(nimble)",
-      "require(stringr)",
       "require(FunctionsBCR)",
 
       "chn <- commandArgs(trailingOnly = TRUE)[[1]]",
@@ -35,17 +34,17 @@ RunNimbleParallel <-
       "i <- 0",
       "repeat{",
       "i <- i + 1",
-      "dump.file.path <- str_c(dump.path, '/mod_chn', chn, '_', i, '.RData')",
+      "dump.file.path <- paste0(dump.path, '/mod_chn', chn, '_', i, '.RData')",
       "mod <- runNimble(comp.mcmc = mod$comp.mcmc, n.iter = ni, dump.file.path = dump.file.path)",
       "}"
     ),
-    con = str_c(dump.path, "/ModRunScript.R"))
+    con = paste0(dump.path, "/ModRunScript.R"))
     #___________________________________________________________________________#
     proc <- process$new(command = "parallel",
-                        args = c("Rscript", eval(str_c(dump.path, "/ModRunScript.R")),
+                        args = c("Rscript", eval(paste0(dump.path, "/ModRunScript.R")),
                                  "{}",
                                  eval(dump.path),
-                                 eval(str_c(dump.path, "/NimbleObjects.RData")),
+                                 eval(paste0(dump.path, "/NimbleObjects.RData")),
                                  ":::",
                                  1:nc))
     proc
@@ -77,8 +76,8 @@ RunNimbleParallel <-
       } 
       if(any(is.na(sumTab.ignore$Rhat)) | any(is.na(sumTab.ignore$n.eff))) {
         proc$kill_tree()
-        write.csv(sumTab.ignore, str_c("Model_summary_PID",proc$get_pid(),".csv"))
-        stop(str_c("Error: One or more parameters is not being sampled.",
+        write.csv(sumTab.ignore, paste0("Model_summary_PID",proc$get_pid(),".csv"))
+        stop(paste0("Error: One or more parameters is not being sampled.",
                    " Check data, initial values, etc., and try again.",
                    " See 'Model_summary_PID",proc$get_pid(),
                    ".csv' for parameters missing Rhat or n.eff."))
@@ -88,17 +87,17 @@ RunNimbleParallel <-
       if(sav.model) R.utils::saveObject(mod, mod.nam)
       if(rtrn.model) assign("mod", mod.nam, envir = .GlobalEnv)
       if(!mod.check.result) {
-        print(str_c("At check = ", nchecks, ". Max Rhat = ", max(sumTab$Rhat),
+        print(paste0("At check = ", nchecks, ". Max Rhat = ", max(sumTab$Rhat),
                     " and min neff = ", min(sumTab$n.eff)))
       } else {
-        print(str_c("Model complete at check = ", nchecks, ". Max Rhat = ", max(sumTab$Rhat),
+        print(paste0("Model complete at check = ", nchecks, ". Max Rhat = ", max(sumTab$Rhat),
                     " and min neff = ", min(sumTab$n.eff)))
       }
       nchecks <- nchecks + 1
     }
     proc$kill_tree()
     if(!mod.check.result) {
-      warn.message <- str_c("Rhat did not decrease after ", nchecks,
+      warn.message <- paste0("Rhat did not decrease after ", nchecks,
                             " checks. Model abandoned before reaching convergence targets.")
       mod <- list(mcmcOutput = mod.out$out, summary = sumTab, mcmc.info = mcmc.info,
                   warning = warn.message)
