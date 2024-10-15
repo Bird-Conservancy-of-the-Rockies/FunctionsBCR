@@ -17,6 +17,7 @@ gatherNimble <- function(read.path, burnin, ni.block, max.samples.saved) {
   m <- m[order(m[,"chn"],m[,"blk"]),]
   
   # set a minimum, to implement burn-in
+  if(burnin < 1) burnin <- ni.block * nblks * burnin
   burnin.block <- burnin / ni.block
   m <- m[m[,"blk"] > burnin.block,]
   
