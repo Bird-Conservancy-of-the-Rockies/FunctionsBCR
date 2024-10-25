@@ -1,6 +1,7 @@
 RunNimbleParallel <-
   function(model.path, inits, data, constants, parameters,
            par.ignore = c(), par.dontign = c(),
+           par.fuzzy.track = c(), fuzzy.threshold = 0.05,
            nc = 2, ni = 2000, nb = 0.5, nt = 10, mod.nam = "mod",
            max.samples.saved = 10000, rtrn.model = F, sav.model = T,
            Rht.required = 1.1, neff.required = 100,
@@ -50,13 +51,14 @@ RunNimbleParallel <-
     proc
     mod.check.result <- FALSE
     nchecks <- 1
-    while(!any(str_detect(list.files(dump.path), "mod_chn"))) {Sys.sleep(10)} # Wait until proc has started writing to file before going on.
+    while(!sum(str_detect(list.files(dump.path), "mod_chn")) < nc) {Sys.sleep(10)} # Wait until proc has written at least one file for each chain before going on.
     while(ifelse(is.null(max.tries), !mod.check.result, !mod.check.result & nchecks < max.tries)) {
       Sys.sleep(check.freq)
       
       mod.out <- gatherNimble(read.path = dump.path, burnin = nb, ni.block = ni, max.samples.saved = max.samples.saved)
       mod.check <- checkNimble(mod.out$out, Rht.required = Rht.required, neff.required = neff.required,
                                par.ignore = par.ignore, par.dontign = par.dontign,
+                               par.fuzzy.track = par.fuzzy.track, fuzzy.threshold = fuzzy.threshold,
                                spit.summary = TRUE)
       mod.check.result <- mod.check$result
       nblks <- mod.out$nblks

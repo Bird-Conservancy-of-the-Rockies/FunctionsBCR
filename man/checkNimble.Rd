@@ -17,6 +17,8 @@
   \item{neff.required}{Minimum n.effective required to return a check result of TRUE.}
   \item{par.ignore}{Character vector listing parameters to ignore when checking Rhat and n.effective. Any parameter containing any of the strings listed here will be ignored.}
   \item{par.dontign}{Character vector listing parameters that should not be ignored when checking Rhat and n.effective. This argument may only be needed when par.ignore is specified if important parameters would otherwise be ignored because they contain one of the elements of par.ignore.}
+  \item{par.fuzzy.track}{Character vector listing parameters to designate for fuzzy evaluation of convergence. If more than (fuzzy.threshold * number of parameters) Rhats > Rht.required, function will return FALSE. Default is an empty vector, whereby no fuzzy evaluation of convergence will occur.}
+  \item{fuzzy.threshold}{Threshold for fuzzy evaluation of convergence (only relevant if length(par.fuzzy.track) > 0).}
   \item{spit.summary}{Whether to provide summary table of model estimates along with convergence/sampling check result.}
 }
 \value{

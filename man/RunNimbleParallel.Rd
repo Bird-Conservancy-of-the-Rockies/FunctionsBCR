@@ -10,8 +10,8 @@
 }
 \usage{
   RunNimbleParallel(model.path, inits, data, constants, parameters,
-           par.ignore = c(), par.dontign = c(), nc = 2, ni = 2000,
-           nb = 0.5, nt = 10, mod.nam = "mod", max.samples.saved = 10000,
+           par.ignore = c(), par.dontign = c(), par.fuzzy.track = c(), fuzzy.threshold = 0.05,
+           nc = 2, ni = 2000, nb = 0.5, nt = 10, mod.nam = "mod", max.samples.saved = 10000,
            rtrn.model = F, sav.model = T, Rht.required = 1.1,
            neff.required = 100, check.freq = 60, max.tries = NULL,
            dump.path = "dump")
@@ -24,6 +24,8 @@
   \item{parameters}{String vector containing names of all parameters for which estimates are to be retained from sampler.}
   \item{par.ignore}{String vector listing parameters to be ignored when calculating convergence and sampling metrics. All parameters with names containing strings listed here will be ignored. Default is an empty vector, whereby all parameters will be considered for calculating Rhat. Ignored parameters will also be excluded from summary output table.}
   \item{par.dontign}{String vector listing parameters that should not be ignored when calculating convergence and sampling metrics. All parameters with names containing strings listed here will not be ignored. This argument is unnecessary if 'par.ignore' is not specified.}
+  \item{par.fuzzy.track}{String vector listing parameters to designate for fuzzy evaluation of convergence. If more than (fuzzy.threshold * number of parameters) Rhats > Rht.required, sampling will continue. Default is an empty vector, whereby no fuzzy evaluation of convergence will occur.}
+  \item{fuzzy.threshold}{Threshold for fuzzy evaluation of convergence (only relevant if length(par.fuzzy.track) > 0).}
   \item{nc}{Number of MCMC chains to run. Note available processing cores must equal or exceed 'nc'. Default = 2.}
   \item{ni}{Number of iterations per sampling block. Default = 2000.}
   \item{nb}{If < 1, proportion of MCMC chains to discard as burn-in. If > 1, chain length before thinning to discard as burn-in.}
