@@ -51,7 +51,7 @@ RunNimbleParallel <-
     proc
     mod.check.result <- FALSE
     nchecks <- 1
-    while(!sum(str_detect(list.files(dump.path), "mod_chn")) < nc) {Sys.sleep(10)} # Wait until proc has written at least one file for each chain before going on.
+    while(sum(str_detect(list.files(dump.path), "mod_chn")) < nc) {Sys.sleep(10)} # Wait until proc has written at least one file for each chain before going on.
     while(ifelse(is.null(max.tries), !mod.check.result, !mod.check.result & nchecks < max.tries)) {
       Sys.sleep(check.freq)
       
