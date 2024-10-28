@@ -89,7 +89,7 @@ RunNimbleParallel <-
         for(p in 1:length(par.fuzzy.track)) {
           pfuz <- par.fuzzy.track[p]
           Rht.fuzzy <- c(Rht.fuzzy,
-                         s %>% filter(str_sub(Parameter, 1, nchar(pfuz) + 1) == str_c(pfuz, "[")) %>%
+                         mod.check$s %>% filter(str_sub(Parameter, 1, nchar(pfuz) + 1) == str_c(pfuz, "[")) %>%
                            pull(Rhat))
         }
         Rht.fuzzy <- Rht.fuzzy[-1]
