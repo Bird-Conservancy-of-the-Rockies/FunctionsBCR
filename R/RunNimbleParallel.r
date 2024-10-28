@@ -66,7 +66,7 @@ RunNimbleParallel <-
       mcmc.info <- c(nchains = nc, niterations = ni*nblks,
                      burnin = ifelse(nb<1, nb*ni*nblks, nb),
                      nthin = nt*thin.additional)
-      sumTab.ignore <- mod.check$s
+      sumTab <- sumTab.ignore <- mod.check$s
       if(length(par.ignore) > 0) {
         if(length(par.dontign) > 0) {
           sumTab.ignore <- sumTab.ignore %>%
@@ -89,12 +89,11 @@ RunNimbleParallel <-
         for(p in 1:length(par.fuzzy.track)) {
           pfuz <- par.fuzzy.track[p]
           Rht.fuzzy <- c(Rht.fuzzy,
-                         mod.check$s %>% filter(str_sub(Parameter, 1, nchar(pfuz) + 1) == str_c(pfuz, "[")) %>%
+                         sumTab %>% filter(str_sub(Parameter, 1, nchar(pfuz) + 1) == str_c(pfuz, "[")) %>%
                            pull(Rhat))
         }
         Rht.fuzzy <- Rht.fuzzy[-1]
       }
-      sumTab <- mod.check$s
       mod <- list(mcmcOutput = mod.out$out, summary = sumTab, mcmc.info = mcmc.info)
       if(sav.model) R.utils::saveObject(mod, mod.nam)
       if(rtrn.model) assign("mod", mod.nam, envir = .GlobalEnv)
