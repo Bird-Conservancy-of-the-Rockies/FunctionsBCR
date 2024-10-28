@@ -26,7 +26,7 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
                        pull(Rhat))
     }
     if(((sum(round(Rht.fuzzy, digits = 1) > Rht.required, na.rm = T) - 1) >
-        ((length(Rht.fuzzy) - 1) * fuzzy.Rht.threshold))) result <- FALSE
+        ((length(Rht.fuzzy) - 1) * fuzzy.threshold))) result <- FALSE
   }
   if(spit.summary) {
     return(mget(c("result", "s")))
