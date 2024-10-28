@@ -20,7 +20,7 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
   if(length(par.fuzzy.track) > 0) {
     Rht.fuzzy <- 1 # Putting in at least one value to avoid error later....
     for(p in 1:length(par.fuzzy.track)) {
-      pfuz <- par.fuzzy.track.Rht[p]
+      pfuz <- par.fuzzy.track[p]
       Rht.fuzzy <- c(Rht.fuzzy,
                      s %>% filter(str_sub(Parameter, 1, nchar(pfuz) + 1) == str_c(pfuz, "[")) %>%
                        pull(Rhat))
