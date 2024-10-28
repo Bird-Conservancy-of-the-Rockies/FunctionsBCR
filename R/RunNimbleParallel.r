@@ -75,7 +75,7 @@ RunNimbleParallel <-
           sumTab.ignore <- sumTab.ignore %>%
             filter(!str_detect_any(Parameter, par.ignore))
         }
-      } 
+      }
       if(any(is.na(sumTab.ignore$Rhat)) | any(is.na(sumTab.ignore$n.eff))) {
         proc$kill_tree()
         write.csv(sumTab.ignore, paste0("Model_summary_PID",proc$get_pid(),".csv"))
@@ -84,16 +84,38 @@ RunNimbleParallel <-
                    " See 'Model_summary_PID",proc$get_pid(),
                    ".csv' for parameters missing Rhat or n.eff."))
       }
+      if(length(par.fuzzy.track) > 0) {
+        Rht.fuzzy <- 1 # Putting in at least one value to avoid error later....
+        for(p in 1:length(par.fuzzy.track)) {
+          pfuz <- par.fuzzy.track[p]
+          Rht.fuzzy <- c(Rht.fuzzy,
+                         s %>% filter(str_sub(Parameter, 1, nchar(pfuz) + 1) == str_c(pfuz, "[")) %>%
+                           pull(Rhat))
+        }
+        Rht.fuzzy <- Rht.fuzzy[-1]
+      }
       sumTab <- mod.check$s
       mod <- list(mcmcOutput = mod.out$out, summary = sumTab, mcmc.info = mcmc.info)
       if(sav.model) R.utils::saveObject(mod, mod.nam)
       if(rtrn.model) assign("mod", mod.nam, envir = .GlobalEnv)
-      if(!mod.check.result) {
-        print(paste0("At check = ", nchecks, ". Max Rhat = ", max(sumTab$Rhat),
+      if(!mod.check.result & length(par.fuzzy.track) == 0) {
+        print(paste0("At check = ", nchecks, ". Max Rhat = ", max(sumTab.ignore$Rhat),
+                    " and min neff = ", min(sumTab.ignore$n.eff)))
+      } else if(!mod.check.result & length(par.fuzzy.track) > 0) {
+        prp.fuzzy.not.coverged <- sum(round(Rht.fuzzy, digits = 1) > Rht.required, na.rm = T) >
+          (length(Rht.fuzzy) * fuzzy.threshold)
+        print(paste0("At check = ", nchecks, ". Max Rhat = ", max(sumTab.ignore$Rhat),
+                     ", min neff = ", min(sumTab.ignore$n.eff),
+                     ", and proportion fuzzy parameters not converged = ",
+                     round(prp.fuzzy.not.coverged, digits = 2)))
+      } else if(mod.check.result & length(par.fuzzy.track) == 0) {
+        print(paste0("Model complete at check = ", nchecks, ". Max Rhat = ", max(sumTab$Rhat),
                     " and min neff = ", min(sumTab$n.eff)))
       } else {
         print(paste0("Model complete at check = ", nchecks, ". Max Rhat = ", max(sumTab$Rhat),
-                    " and min neff = ", min(sumTab$n.eff)))
+                     ", min neff = ", min(sumTab$n.eff),
+                     ", and proportion fuzzy parameters not converged = ",
+                     round(prp.fuzzy.not.coverged, digits = 2)))
       }
       nchecks <- nchecks + 1
     }
