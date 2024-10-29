@@ -1,255 +1,132 @@
 RunNimbleParallel <-
-  function(model, inits, data, constants, parameters,
-           par.ignore.Rht = c(), par.dontign.Rht = c(),
-           par.fuzzy.track.Rht = c(), fuzzy.Rht.threshold = 0.05,
+  function(model.path, inits, data, constants, parameters,
+           par.ignore = c(), par.dontign = c(),
+           par.fuzzy.track = c(), fuzzy.threshold = 0.05,
            nc = 2, ni = 2000, nb = 0.5, nt = 10, mod.nam = "mod",
            max.samples.saved = 10000, rtrn.model = F, sav.model = T,
-           Rht.required = 1.1, neff.required = 100, check.progress = NULL,
-           max.tries = NULL) {
+           Rht.required = 1.1, neff.required = 100,
+           check.freq = 10, max.tries = NULL, dump.path = "dump") {
+    if(!rtrn.model & !sav.model) stop("There is no way for RunNimbleParallel to save output. Set either rtrn.model = TRUE or sav.model = TRUE.")
     if(nb < 1 & (ni - (ni * nb)) < 100) stop("Increase iterations (ni) or reduce burn-in. Too few samples for calculating Rhat.")
     if(nb >= 1 & (ni - nb) < 100) stop("Increase iterations (ni) or reduce burn-in. Too few samples for calculating Rhat.")
-    
+
     require(nimble)
-    require(parallel)
+    require(processx)
+    # require(parallel)
     require(coda)
     require(mcmcOutput)
-    set.seed(1)
-    cl<-makeCluster(nc, timeout = 5184000)
-    model <<- model
-    inits <<- inits
-    #data <<- data
-    data.inp <<- data
-    constants <<- constants
-    parameters <<- parameters
-    ni <<- ni
-    nt <<- nt
-    clusterExport(cl, c("model", "inits", "data.inp", "constants", "parameters",
-                        "ni", "nt"))
-    for (j in seq_along(cl)) {
-      set.seed(j)
-      if(is.function(inits)) {
-        init <<- inits()
-      } else {
-        init <<- inits
-      }
-      clusterExport(cl[j], "init")
-    }
-    out1 <- clusterEvalQ(cl, {
-      library(nimble)
-      library(coda)
-      model <- nimbleModel(code = model, name = "model",
-                           constants = constants, data = data.inp,
-                           inits = init, calculate = FALSE)
-      Cmodel <- compileNimble(model)
-      modelConf <- configureMCMC(model, thin = nt)
-      # Example code for switching out samplers:
-      # modelConf$removeSamplers(c("beta0", "betaVec", "delta0", "dev.delta0", "deltaVec"))
-      # modelConf$addSampler(c("beta0", "betaVec"), type = "RW_block", control = list(tries = 10))
-      # modelConf$addSampler(c("delta0", "deltaVec"), type = "RW_block", control = list(tries = 10))
-      # modelConf$addSampler(c("dev.delta0"), type = "RW_block", control = list(tries = 10))
-      modelConf$setMonitors(parameters)
-      modelMCMC <- buildMCMC(modelConf)
-      CmodelMCMC <- compileNimble(modelMCMC, project = model)
-      CmodelMCMC$run(ni, reset = FALSE)
-      return(as.mcmc(as.matrix(CmodelMCMC$mvSamples)))
-      gc(verbose = FALSE)
-    })
-    for(chn in 1:nc) { # nc must be > 1
-      ind.keep <- c()
-      for(p in 1:length(parameters)) ind.keep <-
-          c(ind.keep, which(str_detect(dimnames(out1[[chn]])[[2]], parameters[p]))) %>% unique()
-      out1[[chn]] <- out1[[chn]][,ind.keep]
-    }
-    
-    ## Check convergence ##
-    out2 <- out1
-    ni.saved <- nrow(out2[[1]])
-    for(chn in 1:nc) { # nc must be > 1
+    # Also requires `parallel` package in Linux.
+    if(!dir.exists(dump.path)) dir.create(dump.path)
+    save(list = c("model.path", "constants", "data", "inits", "parameters", "ni", "nt"), file = paste0(dump.path, "/NimbleObjects.RData"))
+    #[Create R script for kicking off nimble run here]. Call it "ModRunScript.R"
+    #___________________________________________________________________________#
+    writeLines(text = c(
+      "require(nimble)",
+      "require(FunctionsBCR)",
+
+      "chn <- commandArgs(trailingOnly = TRUE)[[1]]",
+      "dump.path <- commandArgs(trailingOnly = TRUE)[[2]]",
+      "path.NimbleWorkspace <- commandArgs(trailingOnly = TRUE)[[3]]",
       
-      if(nb < 1) {
-        nb.real <- (round(ni.saved * nb)+1)
-      } else {
-        nb.real <- (round(nb/nt)+1)
-      }
-      out2[[chn]] <- out2[[chn]][nb.real:ni.saved,]
-    }
-    out.mcmc <- coda::as.mcmc.list(lapply(out2, coda::as.mcmc))
-    
-    mod <- mcmcOutput(out.mcmc)
-    sumTab <- summary(mod, MCEpc = F, Rhat = T, n.eff = T, f = T, overlap0 = T, verbose = F)
-    sumTab <- sumTab %>%
-      as_tibble() %>%
-      mutate(Parameter = row.names(sumTab)) %>%
-      dplyr::select(Parameter, mean:f)
-    
-    if(length(par.ignore.Rht) > 0) {
-      if(length(par.dontign.Rht) == 0) {
-        ind.ignore <- which(str_detect_any(sumTab$Parameter, par.ignore.Rht))
-      } else {
-        ind.ignore <- which(str_detect_any(sumTab$Parameter, par.ignore.Rht) &
-                              !str_detect_any(sumTab$Parameter, par.dontign.Rht))
-      }
-      if(length(ind.ignore) > 0) sumTab <- sumTab %>% slice(-ind.ignore)
-    }
-    mxRht <- sumTab %>% pull(Rhat) %>% max() # na.rm = T
-    mn.neff <- sumTab %>% pull(n.eff) %>% min() # na.rm = T
-    if(is.na(mxRht) | is.na(mn.neff)) {
-      write.csv(sumTab, "Model_summary.csv")
-      stop("Error: One or more parameters is not being sampled. Check data, initial values, etc., and try again. See 'Model_summary.csv' for parameters missing Rhat or n.eff.")
-    }
-    Rht.fuzzy <- 1 # Putting in at least one value to avoid error later....
-    if(length(par.fuzzy.track.Rht) > 0) {
-      for(p in 1:length(par.fuzzy.track.Rht)) {
-        pfuz <- par.fuzzy.track.Rht[p]
-        Rht.fuzzy <- c(Rht.fuzzy,
-                       sumTab %>%
-                         filter(str_sub(Parameter, 1, nchar(pfuz) + 1) ==
-                                  str_c(pfuz, "[")) %>%
-                         pull(Rhat))
-      }
-      rm(p, pfuz)
-    }
-    if(!is.null(check.progress)) mxRht.1 <- mxRht
-    
-    mcmc.info <- c(nchains = nc, niterations = ni,
-                   burnin = ifelse(nb<1, nb*ni, nb), nthin = nt)
-    mod <- list(mcmcOutput = mod, summary = sumTab, mcmc.info = mcmc.info)
-    if(sav.model) R.utils::saveObject(mod, mod.nam) # If running all in one.
-    
-    ## If has not converged, continue sampling
-    if(round(mxRht, digits = 1) > Rht.required |
-       mn.neff < neff.required |
-       (length(Rht.fuzzy) > 0 &
-       ((sum(round(Rht.fuzzy, digits = 1) > Rht.required, na.rm = T) - 1) >
-       ((length(Rht.fuzzy) - 1) * fuzzy.Rht.threshold)))) { # Disregarding the 1 included earlier to avoid an error in round()
-      n.runs <- 1
-      R.utils::saveObject(out1, str_c(mod.nam, "_chunk", n.runs)) # Save samples from previous run to drive.
-    }
-    rm(mod, sumTab, out1, out2, out.mcmc)
-    gc(verbose = F)
-    while(round(mxRht, digits = 1) > Rht.required |
-          mn.neff < neff.required |
-          (length(Rht.fuzzy) > 0 &
-           ((sum(round(Rht.fuzzy, digits = 1) > Rht.required, na.rm = T) - 1) >
-            ((length(Rht.fuzzy) - 1) * fuzzy.Rht.threshold)))) { # Disregarding the 1 included earlier to avoid an error in round()
-      n.runs <- n.runs + 1
-      print(str_c("Run = ", n.runs, ". Max Rhat = ", mxRht, " and min neff = ", mn.neff,
-                  ". Keep on chugging."))
+      "load(path.NimbleWorkspace)",
+      "source(model.path)",
+      "mod <- runNimble(mod.lst = list(model, constants, data, inits, parameters),",
+      "n.iter = ni, n.thin = nt, dump.file.path = NULL)",
+      "i <- 0",
+      "repeat{",
+      "i <- i + 1",
+      "dump.file.path <- paste0(dump.path, '/mod_chn', chn, '_', i, '.RData')",
+      "mod <- runNimble(comp.mcmc = mod$comp.mcmc, n.iter = ni, dump.file.path = dump.file.path)",
+      "}"
+    ),
+    con = paste0(dump.path, "/ModRunScript.R"))
+    #___________________________________________________________________________#
+    proc <- process$new(command = "parallel",
+                        args = c("Rscript", eval(paste0(dump.path, "/ModRunScript.R")),
+                                 "{}",
+                                 eval(dump.path),
+                                 eval(paste0(dump.path, "/NimbleObjects.RData")),
+                                 ":::",
+                                 1:nc))
+    proc
+    mod.check.result <- FALSE
+    nchecks <- 1
+    while(sum(str_detect(list.files(dump.path), "mod_chn")) < nc) {Sys.sleep(10)} # Wait until proc has written at least one file for each chain before going on.
+    while(ifelse(is.null(max.tries), !mod.check.result, !mod.check.result & nchecks < max.tries)) {
+      Sys.sleep(check.freq)
       
-      out2 <- clusterEvalQ(cl, {
-        CmodelMCMC$run(ni, reset = FALSE, resetMV = TRUE) # Resume sampling.
-        return(as.mcmc(as.matrix(CmodelMCMC$mvSamples)))
-        gc(verbose = F)
-      })
-      for(chn in 1:nc) { # nc must be > 1
-        ind.keep <- c()
-        for(p in 1:length(parameters)) ind.keep <-
-            c(ind.keep, which(str_detect(dimnames(out2[[chn]])[[2]], parameters[p]))) %>% unique()
-        out2[[chn]] <- out2[[chn]][,ind.keep]
-      }
-      R.utils::saveObject(out2, str_c(mod.nam, "_chunk", n.runs)) # Save samples from previous run to drive.
-      
-      if(nb < 1) {  # Anticipated number of samples to save (assuming half discarded as burn-in).
-        ni2 <- round(((ni / nt) * n.runs * nc) * (1 - nb))
-      } else {
-        ni2 <- round(((ni / nt) * n.runs * nc) - (nb / nt * nc))
-      }
-      if(ni2 > max.samples.saved) {
-        nt2 <- round(1 / (max.samples.saved / ni2)) # Set additional thinning so that saved iterations don't exceed (by too much) max.samples.saved (specified by user).
-      } else {
-        nt2 <- 1
-      }
-      
-      # Reassemble chain from chunks and apply additional thinning.
-      out1 <- R.utils::loadObject(str_c(mod.nam, "_chunk", 1))
-      ni.saved <- nrow(out1[[1]])
-      for(chn in 1:nc) { # nc must be > 1
-        out1[[chn]] <- out1[[chn]][seq(2, ni.saved, by = nt2),] # Starting at 2 because first iteration is NA for some reason.
-      }
-      for(r in 2:n.runs) {
-        out.r <- R.utils::loadObject(str_c(mod.nam, "_chunk", r))
-        ni.saved <- nrow(out.r[[1]])
-        for(chn in 1:nc) {
-          out.r[[chn]] <- out.r[[chn]][seq(1, ni.saved, by = nt2),]
-          out1[[chn]] <- rbind(out1[[chn]], out.r[[chn]])
-        }
-      }
-      
-      # Discard specified proportion of initial samples as burn-in
-      out3 <- out1
-      ni.saved <- nrow(out3[[1]])
-      for(chn in 1:nc) {
-        if(nb < 1) {
-          nb.real <- (round(ni.saved * nb)+1)
+      mod.out <- gatherNimble(read.path = dump.path, burnin = nb, ni.block = ni, max.samples.saved = max.samples.saved)
+      mod.check <- checkNimble(mod.out$out, Rht.required = Rht.required, neff.required = neff.required,
+                               par.ignore = par.ignore, par.dontign = par.dontign,
+                               par.fuzzy.track = par.fuzzy.track, fuzzy.threshold = fuzzy.threshold,
+                               spit.summary = TRUE)
+      mod.check.result <- mod.check$result
+      nblks <- mod.out$nblks
+      thin.additional <- mod.out$additional.thin.rate
+      mcmc.info <- c(nchains = nc, niterations = ni*nblks,
+                     burnin = ifelse(nb<1, nb*ni*nblks, nb),
+                     nthin = nt*thin.additional)
+      sumTab <- sumTab.ignore <- mod.check$s
+      if(length(par.ignore) > 0) {
+        if(length(par.dontign) > 0) {
+          sumTab.ignore <- sumTab.ignore %>%
+            filter(!str_detect_any(Parameter, par.ignore) | str_detect_any(Parameter, par.dontign))
         } else {
-          nb.real <- round((nb / (nt * nt2))+1)
+          sumTab.ignore <- sumTab.ignore %>%
+            filter(!str_detect_any(Parameter, par.ignore))
         }
-        out3[[chn]] <- out3[[chn]][nb.real:ni.saved,]
       }
-      out.mcmc.update <- coda::as.mcmc.list(lapply(out3, coda::as.mcmc))
-      
-      mod <- mcmcOutput(out.mcmc.update)
-      sumTab <- summary(mod, MCEpc = F, Rhat = T, n.eff = T, f = T, overlap0 = T, verbose = F)
-      sumTab <- sumTab %>%
-        as_tibble() %>%
-        mutate(Parameter = row.names(sumTab)) %>%
-        dplyr::select(Parameter, mean:f)
-      if(length(par.ignore.Rht) > 0) {
-        if(length(par.dontign.Rht) == 0) {
-          ind.ignore <- which(str_detect_any(sumTab$Parameter, par.ignore.Rht))
-        } else {
-          ind.ignore <- which(str_detect_any(sumTab$Parameter, par.ignore.Rht) &
-                                !str_detect_any(sumTab$Parameter, par.dontign.Rht))
-        }
-        if(length(ind.ignore) > 0) sumTab <- sumTab %>% slice(-ind.ignore)
+      if(any(is.na(sumTab.ignore$Rhat)) | any(is.na(sumTab.ignore$n.eff))) {
+        proc$kill_tree()
+        write.csv(sumTab.ignore, paste0("Model_summary_PID",proc$get_pid(),".csv"))
+        stop(paste0("Error: One or more parameters is not being sampled.",
+                   " Check data, initial values, etc., and try again.",
+                   " See 'Model_summary_PID",proc$get_pid(),
+                   ".csv' for parameters missing Rhat or n.eff."))
       }
-      mxRht <- sumTab %>% pull(Rhat) %>% max() # na.rm = T
-      mn.neff <- sumTab %>% pull(n.eff) %>% min() # na.rm = T
-      Rht.fuzzy <- 1 # Putting in at least one value to avoid error later....
-      if(length(par.fuzzy.track.Rht) > 0) {
-        for(p in 1:length(par.fuzzy.track.Rht)) {
-          pfuz <- par.fuzzy.track.Rht[p]
+      if(length(par.fuzzy.track) > 0) {
+        Rht.fuzzy <- 1 # Putting in at least one value to avoid error later....
+        for(p in 1:length(par.fuzzy.track)) {
+          pfuz <- par.fuzzy.track[p]
           Rht.fuzzy <- c(Rht.fuzzy,
-                         sumTab %>%
-                           filter(str_sub(Parameter, 1, nchar(pfuz) + 1) ==
-                                    str_c(pfuz, "[")) %>%
+                         sumTab %>% filter(str_sub(Parameter, 1, nchar(pfuz) + 1) == str_c(pfuz, "[")) %>%
                            pull(Rhat))
         }
-        rm(p, pfuz)
+        Rht.fuzzy <- Rht.fuzzy[-1]
+        prp.fuzzy.not.coverged <- (sum(round(Rht.fuzzy, digits = 1) > Rht.required, na.rm = T) /
+          length(Rht.fuzzy))
       }
-      gc(verbose = FALSE)
-      
-      mcmc.info <- c(nchains = nc, niterations = ni * n.runs,
-                     burnin = ifelse(nb<1, round(ni.saved * nb), nb),
-                     nthin = nt * nt2)
-      if(!is.null(check.progress)) {
-        if(n.runs == check.progress & mxRht >= mxRht.1 & mxRht > 2) {
-          warn.message <- str_c("Insufficient progress towards convergence - Rhat has not decreased after ", check.progress,
-                                " runs. Abandoning model. Recommend checking model output and trying a different model.")
-          mod <- list(mcmcOutput = mod, summary = sumTab, mcmc.info = mcmc.info,
-                      warning = warn.message)
-          if(sav.model) R.utils::saveObject(mod, mod.nam)
-          print(warn.message)
-          break
-        }
+      mod <- list(mcmcOutput = mod.out$out, summary = sumTab, mcmc.info = mcmc.info)
+      if(sav.model) R.utils::saveObject(mod, mod.nam)
+      if(rtrn.model) assign("mod", mod.nam, envir = .GlobalEnv)
+      if(!mod.check.result & length(par.fuzzy.track) == 0) {
+        print(paste0("At check = ", nchecks, ". Max Rhat = ", max(sumTab.ignore$Rhat),
+                    " and min neff = ", min(sumTab.ignore$n.eff)))
+      } else if(!mod.check.result & length(par.fuzzy.track) > 0) {
+        print(paste0("At check = ", nchecks, ". Max Rhat = ", max(sumTab.ignore$Rhat),
+                     ", min neff = ", min(sumTab.ignore$n.eff),
+                     ", and proportion fuzzy parameters not converged = ",
+                     round(prp.fuzzy.not.coverged, digits = 2)))
+      } else if(mod.check.result & length(par.fuzzy.track) == 0) {
+        print(paste0("Model complete at check = ", nchecks, ". Max Rhat = ", max(sumTab$Rhat),
+                    " and min neff = ", min(sumTab$n.eff)))
+      } else {
+        print(paste0("Model complete at check = ", nchecks, ". Max Rhat = ", max(sumTab$Rhat),
+                     ", min neff = ", min(sumTab$n.eff),
+                     ", and proportion fuzzy parameters not converged = ",
+                     round(prp.fuzzy.not.coverged, digits = 2)))
       }
-      if(!is.null(max.tries)) {
-        if(n.runs == max.tries) {
-          warn.message <- "Maximum number of runs reached. Abandoning model. Recommend checking model output and trying a different model."
-          mod <- list(mcmcOutput = mod, summary = sumTab, mcmc.info = mcmc.info,
-                      warning = warn.message)
-          if(sav.model) R.utils::saveObject(mod, mod.nam)
-          print(warn.message)
-          break
-        }
-      }
-      mod <- list(mcmcOutput = mod, summary = sumTab, mcmc.info = mcmc.info)
-      if(sav.model) R.utils::saveObject(mod, mod.nam) # If running all in one.
-      
-      rm(mod, sumTab, out1, out2, out3, out.r, out.mcmc.update)
-      gc(verbose = F)
+      nchecks <- nchecks + 1
     }
-    if(exists("n.runs")) for(r in 1:n.runs) file.remove(str_c(mod.nam, "_chunk", r))
-    if(rtrn.model) return(mod)
-    stopCluster(cl)
+    proc$kill_tree()
+    if(!mod.check.result) {
+      warn.message <- paste0("Rhat did not decrease after ", nchecks,
+                            " checks. Model abandoned before reaching convergence targets.")
+      mod <- list(mcmcOutput = mod.out$out, summary = sumTab, mcmc.info = mcmc.info,
+                  warning = warn.message)
+      if(sav.model) R.utils::saveObject(mod, mod.nam)
+      if(rtrn.model) assign("mod", mod.nam, envir = .GlobalEnv)
+    }
+    unlink(dump.path, recursive = TRUE)
+    gc(verbose = FALSE)
   }
