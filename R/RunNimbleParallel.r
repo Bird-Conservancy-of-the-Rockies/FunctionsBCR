@@ -93,8 +93,8 @@ RunNimbleParallel <-
                            pull(Rhat))
         }
         Rht.fuzzy <- Rht.fuzzy[-1]
-        prp.fuzzy.not.coverged <- sum(round(Rht.fuzzy, digits = 1) > Rht.required, na.rm = T) /
-          (length(Rht.fuzzy) * fuzzy.threshold)
+        prp.fuzzy.not.coverged <- (sum(round(Rht.fuzzy, digits = 1) > Rht.required, na.rm = T) /
+          length(Rht.fuzzy))
       }
       mod <- list(mcmcOutput = mod.out$out, summary = sumTab, mcmc.info = mcmc.info)
       if(sav.model) R.utils::saveObject(mod, mod.nam)
