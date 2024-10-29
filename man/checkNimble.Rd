@@ -9,6 +9,7 @@
 \usage{
   checkNimble(mcmcOutput, Rht.required = 1.1, neff.required = 100,
                         par.ignore = c(), par.dontign = c(),
+                        par.fuzzy.track = c(), fuzzy.threshold = 0.05,
                         spit.summary = FALSE)
 }
 \arguments{
