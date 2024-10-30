@@ -108,11 +108,11 @@ RunNimbleParallel <-
                      ", and proportion fuzzy parameters not converged = ",
                      round(prp.fuzzy.not.coverged, digits = 2)))
       } else if(mod.check.result & length(par.fuzzy.track) == 0) {
-        print(paste0("Model complete at check = ", nchecks, ". Max Rhat = ", max(sumTab$Rhat),
-                    " and min neff = ", min(sumTab$n.eff)))
+        print(paste0("Model complete at check = ", nchecks, ". Max Rhat = ", max(sumTab.ignore$Rhat),
+                    " and min neff = ", min(sumTab.ignore$n.eff)))
       } else {
-        print(paste0("Model complete at check = ", nchecks, ". Max Rhat = ", max(sumTab$Rhat),
-                     ", min neff = ", min(sumTab$n.eff),
+        print(paste0("Model complete at check = ", nchecks, ". Max Rhat = ", max(sumTab.ignore$Rhat),
+                     ", min neff = ", min(sumTab.ignore$n.eff),
                      ", and proportion fuzzy parameters not converged = ",
                      round(prp.fuzzy.not.coverged, digits = 2)))
       }
