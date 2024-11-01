@@ -14,12 +14,12 @@ gatherNimble <- function(read.path, burnin, ni.block, max.samples.saved) {
   nblks <- min(tapply(m[,2], m[,1], max))
   
   rownames(m) <- fl
-  m <- m[order(m[,"chn"],m[,"blk"]),]
+  m <- m[order(m[,"chn"],m[,"blk"]),,drop = FALSE]
   
   # set a minimum, to implement burn-in
   if(burnin < 1) burnin <- ni.block * nblks * burnin
   burnin.block <- burnin / ni.block
-  m <- m[m[,"blk"] > burnin.block,]
+  m <- m[m[,"blk"] > burnin.block,,drop = FALSE]
   
   chns <- unique(m[,"chn"])
   
