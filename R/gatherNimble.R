@@ -25,13 +25,15 @@ gatherNimble <- function(read.path, burnin, ni.block, max.samples.saved) {
   
   ## Make one matrix for each chain:
   Sys.sleep(5) # To provide time for lingering files to finish writing.
+  
   gathr <- lapply(chns, FUN = function (s) {
     blks <- unique(m[m[,"chn"] == s, "blk"])
     lst <- lapply(blks, FUN = function (b) {
-      x <- try(suppressWarnings(load(file = paste0(read.path, "/", rownames(m)[m[,"chn"] == s & m[,"blk"] == b] ))))
-      while(class(x) == "try-error") {
+      x <- system2(command = "lsof", args = paste0(read.path, "/", rownames(m)[m[,"chn"] == s & m[,"blk"] == b] ), stdout = TRUE)
+      # x <- try(suppressWarnings(load(file = paste0(read.path, "/", rownames(m)[m[,"chn"] == s & m[,"blk"] == b] ))))
+      while(length(x) > 0) {
         Sys.sleep(5)
-        x <- try(suppressWarnings(load(file = paste0(read.path, "/", rownames(m)[m[,"chn"] == s & m[,"blk"] == b] ))))
+        x <- system2(command = "lsof", args = paste0(read.path, "/", rownames(m)[m[,"chn"] == s & m[,"blk"] == b] ), stdout = TRUE)
         }
       load(file = paste0(read.path, "/", rownames(m)[m[,"chn"] == s & m[,"blk"] == b] ))
       samp

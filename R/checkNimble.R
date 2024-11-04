@@ -15,8 +15,10 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
                             !str_detect_any(s$Parameter, par.dontign))
     }
     if(length(ind.ignore) > 0) s.ignored <- s %>% slice(-ind.ignore)
+    result <- max(s.ignored$Rhat) <= Rht.required & min(s.ignored$n.eff) >= neff.required
+  } else {
+    result <- max(s$Rhat) <= Rht.required & min(s$n.eff) >= neff.required
   }
-  result <- max(s.ignored$Rhat) <= Rht.required & min(s.ignored$n.eff) >= neff.required
   if(length(par.fuzzy.track) > 0) {
     Rht.fuzzy <- 1 # Putting in at least one value to avoid error later....
     for(p in 1:length(par.fuzzy.track)) {
