@@ -24,6 +24,7 @@ gatherNimble <- function(read.path, burnin, ni.block, max.samples.saved) {
   chns <- unique(m[,"chn"])
   
   ## Make one matrix for each chain:
+  Sys.sleep(5) # To provide time for lingering files to finish writing.
   gathr <- lapply(chns, FUN = function (s) {
     blks <- unique(m[m[,"chn"] == s, "blk"])
     lst <- lapply(blks, FUN = function (b) {
