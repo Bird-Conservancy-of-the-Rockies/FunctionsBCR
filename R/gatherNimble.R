@@ -28,7 +28,10 @@ gatherNimble <- function(read.path, burnin, ni.block, max.samples.saved) {
     blks <- unique(m[m[,"chn"] == s, "blk"])
     lst <- lapply(blks, FUN = function (b) {
       x <- try(suppressWarnings(load(file = paste0(read.path, "/", rownames(m)[m[,"chn"] == s & m[,"blk"] == b] ))))
-      while(class(x) == "try-error") {Sys.sleep(5)}
+      while(class(x) == "try-error") {
+        Sys.sleep(5)
+        x <- try(suppressWarnings(load(file = paste0(read.path, "/", rownames(m)[m[,"chn"] == s & m[,"blk"] == b] ))))
+        }
       load(file = paste0(read.path, "/", rownames(m)[m[,"chn"] == s & m[,"blk"] == b] ))
       samp
     })
