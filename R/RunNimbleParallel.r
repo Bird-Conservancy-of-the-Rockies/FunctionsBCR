@@ -59,13 +59,13 @@ RunNimbleParallel <-
       mod.check <- checkNimble(mod.out$out, Rht.required = Rht.required, neff.required = neff.required,
                                par.ignore = par.ignore, par.dontign = par.dontign,
                                par.fuzzy.track = par.fuzzy.track, fuzzy.threshold = fuzzy.threshold,
-                               spit.summary = TRUE)
+                               spit.summary = TRUE, mod.nam = mod.nam)
       while(!any(names(mod.check$s) == "Rhat")) {
         Sys.sleep(60)
         mod.check <- checkNimble(mod.out$out, Rht.required = Rht.required, neff.required = neff.required,
                                  par.ignore = par.ignore, par.dontign = par.dontign,
                                  par.fuzzy.track = par.fuzzy.track, fuzzy.threshold = fuzzy.threshold,
-                                 spit.summary = TRUE)
+                                 spit.summary = TRUE, mod.nam = mod.nam)
       }
       mod.check.result <- mod.check$result
       nblks <- mod.out$nblks
