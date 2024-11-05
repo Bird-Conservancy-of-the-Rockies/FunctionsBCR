@@ -1,7 +1,7 @@
 checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
                         par.ignore = c(), par.dontign = c(),
                         par.fuzzy.track = c(), fuzzy.threshold = 0.05,
-                        spit.summary = FALSE) {
+                        spit.summary = FALSE, mod.nam = "mod") {
   s <- summary(mcmcOutput, MCEpc = T, Rhat = T, n.eff = T, f = T, overlap0 = T, verbose = FALSE)
   s <- s %>%
     as_tibble() %>%
@@ -14,7 +14,19 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
       ind.ignore <- which(str_detect_any(s$Parameter, par.ignore) &
                             !str_detect_any(s$Parameter, par.dontign))
     }
-    if(length(ind.ignore) > 0) s.ignored <- s %>% slice(-ind.ignore)
+    if(length(ind.ignore) > 0) {
+      s.ignored <- s %>% slice(-ind.ignore)
+    } else {
+      s.ignored <- s
+    }
+    if(any(is.na(s.ignored$Rhat))) {
+      write.csv(s.ignored %>% filter(is.na(Rhat) | Rhat %in% c(Inf, -Inf)), paste0("Bad_pars_", mod.nam, ".csv"))
+      stop(paste0("Parameters missing Rhat. Check Bad_pars_", mod.nam, ".csv and possibly try alternative initial values or check data."))
+    }
+    if(any(s.ignored$Rhat %in% c(Inf, -Inf))) {
+      write.csv(s.ignored %>% filter(Rhat %in% c(Inf, -Inf)), paste0("Bad_pars_", mod.nam, ".csv"))
+      stop(paste0("Parameters with Inf or -Inf Rhats. Check Bad_pars_", mod.nam, ".csv and possibly try alternative initial values or check data."))
+    }
     result <- max(s.ignored$Rhat) <= Rht.required & min(s.ignored$n.eff) >= neff.required
   } else {
     result <- max(s$Rhat) <= Rht.required & min(s$n.eff) >= neff.required
@@ -28,6 +40,18 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
                        pull(Rhat))
     }
     Rht.fuzzy <- Rht.fuzzy[-1]
+    if(any(is.na(Rht.fuzzy))) {
+      write.csv(s %>% filter(str_sub(Parameter, 1, nchar(pfuz) + 1) == str_c(pfuz, "[")) %>%
+                  filter(is.na(Rhat) | Rhat %in% c(Inf, -Inf)), paste0("Bad_pars_fuzzy_", mod.nam, ".csv"))
+      stop(paste0("Fuzzy parameters missing Rhat. Check Bad_pars_fuzzy_", mod.nam,
+                  ".csv and possibly try alternative initial values or check data."))
+    }
+    if(any(s.ignored$Rhat %in% c(Inf, -Inf))) {
+      write.csv(s %>% filter(str_sub(Parameter, 1, nchar(pfuz) + 1) == str_c(pfuz, "[")) %>%
+                  filter(Rhat %in% c(Inf, -Inf)), paste0("Bad_pars_fuzzy_", mod.nam, ".csv"))
+      stop(paste0("Fuzzy parameters with Inf or -Inf Rhats. Check Bad_pars_fuzzy_", mod.nam,
+                  ".csv and possibly try alternative initial values or check data."))
+    }
     if(sum(round(Rht.fuzzy, digits = 1) > Rht.required, na.rm = T) >
         (length(Rht.fuzzy) * fuzzy.threshold)) result <- FALSE
   }
