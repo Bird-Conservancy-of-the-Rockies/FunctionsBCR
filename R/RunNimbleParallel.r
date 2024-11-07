@@ -52,78 +52,84 @@ RunNimbleParallel <-
     mod.check.result <- FALSE
     nchecks <- 1
     while(sum(str_detect(list.files(dump.path), "mod_chn")) < nc) {Sys.sleep(10)} # Wait until proc has written at least one file for each chain before going on.
+    nblks.previous <- 0 # Will be updated as we go.
     while(ifelse(is.null(max.tries), !mod.check.result, !mod.check.result & nchecks < max.tries)) {
       Sys.sleep(check.freq)
       
-      mod.out <- gatherNimble(read.path = dump.path, burnin = nb, ni.block = ni, max.samples.saved = max.samples.saved)
-      mod.check <- checkNimble(mod.out$out, Rht.required = Rht.required, neff.required = neff.required,
-                               par.ignore = par.ignore, par.dontign = par.dontign,
-                               par.fuzzy.track = par.fuzzy.track, fuzzy.threshold = fuzzy.threshold,
-                               spit.summary = TRUE, mod.nam = mod.nam)
-      while(!any(names(mod.check$s) == "Rhat")) {
-        Sys.sleep(60)
+      check.blocks <- countNimbleBlocks(read.path = dump.path, burnin = nb, ni.block = ni)
+      if(check.blocks$nblks > nblks.previous) {
+        nblks.previous <- check.blocks$nblks
+        
+        mod.out <- gatherNimble(read.path = dump.path, burnin = nb, ni.block = ni, max.samples.saved = max.samples.saved)
         mod.check <- checkNimble(mod.out$out, Rht.required = Rht.required, neff.required = neff.required,
                                  par.ignore = par.ignore, par.dontign = par.dontign,
                                  par.fuzzy.track = par.fuzzy.track, fuzzy.threshold = fuzzy.threshold,
                                  spit.summary = TRUE, mod.nam = mod.nam)
-      }
-      mod.check.result <- mod.check$result
-      nblks <- mod.out$nblks
-      thin.additional <- mod.out$additional.thin.rate
-      mcmc.info <- c(nchains = nc, niterations = ni*nblks,
-                     burnin = ifelse(nb<1, nb*ni*nblks, nb),
-                     nthin = nt*thin.additional)
-      sumTab <- sumTab.ignore <- mod.check$s
-      if(length(par.ignore) > 0) {
-        if(length(par.dontign) > 0) {
-          sumTab.ignore <- sumTab.ignore %>%
-            filter(!str_detect_any(Parameter, par.ignore) | str_detect_any(Parameter, par.dontign))
+        while(!any(names(mod.check$s) == "Rhat")) {
+          Sys.sleep(60)
+          mod.check <- checkNimble(mod.out$out, Rht.required = Rht.required, neff.required = neff.required,
+                                   par.ignore = par.ignore, par.dontign = par.dontign,
+                                   par.fuzzy.track = par.fuzzy.track, fuzzy.threshold = fuzzy.threshold,
+                                   spit.summary = TRUE, mod.nam = mod.nam)
+        }
+        mod.check.result <- mod.check$result
+        nblks <- mod.out$nblks
+        thin.additional <- mod.out$additional.thin.rate
+        mcmc.info <- c(nchains = nc, niterations = ni*nblks,
+                       burnin = ifelse(nb<1, nb*ni*nblks, nb),
+                       nthin = nt*thin.additional)
+        sumTab <- sumTab.ignore <- mod.check$s
+        if(length(par.ignore) > 0) {
+          if(length(par.dontign) > 0) {
+            sumTab.ignore <- sumTab.ignore %>%
+              filter(!str_detect_any(Parameter, par.ignore) | str_detect_any(Parameter, par.dontign))
+          } else {
+            sumTab.ignore <- sumTab.ignore %>%
+              filter(!str_detect_any(Parameter, par.ignore))
+          }
+        }
+        if(any(is.na(sumTab.ignore$Rhat)) | any(is.na(sumTab.ignore$n.eff))) {
+          proc$kill_tree()
+          write.csv(sumTab.ignore, paste0("Model_summary_PID",proc$get_pid(),".csv"))
+          stop(paste0("Error: One or more parameters is not being sampled.",
+                      " Check data, initial values, etc., and try again.",
+                      " See 'Model_summary_PID",proc$get_pid(),
+                      ".csv' for parameters missing Rhat or n.eff."))
+        }
+        if(length(par.fuzzy.track) > 0) {
+          Rht.fuzzy <- 1 # Putting in at least one value to avoid error later....
+          for(p in 1:length(par.fuzzy.track)) {
+            pfuz <- par.fuzzy.track[p]
+            Rht.fuzzy <- c(Rht.fuzzy,
+                           sumTab %>% filter(str_sub(Parameter, 1, nchar(pfuz) + 1) == str_c(pfuz, "[")) %>%
+                             pull(Rhat))
+          }
+          Rht.fuzzy <- Rht.fuzzy[-1]
+          prp.fuzzy.not.coverged <- (sum(round(Rht.fuzzy, digits = 1) > Rht.required, na.rm = T) /
+                                       length(Rht.fuzzy))
+        }
+        mod <- list(mcmcOutput = mod.out$out, summary = sumTab, mcmc.info = mcmc.info)
+        if(sav.model) R.utils::saveObject(mod, mod.nam)
+        if(rtrn.model) assign("mod", mod.nam, envir = .GlobalEnv)
+        if(!mod.check.result & length(par.fuzzy.track) == 0) {
+          print(paste0("At check = ", nchecks, ". Max Rhat = ", max(sumTab.ignore$Rhat),
+                       " and min neff = ", min(sumTab.ignore$n.eff)))
+        } else if(!mod.check.result & length(par.fuzzy.track) > 0) {
+          print(paste0("At check = ", nchecks, ". Max Rhat = ", max(sumTab.ignore$Rhat),
+                       ", min neff = ", min(sumTab.ignore$n.eff),
+                       ", and proportion fuzzy parameters not converged = ",
+                       round(prp.fuzzy.not.coverged, digits = 2)))
+        } else if(mod.check.result & length(par.fuzzy.track) == 0) {
+          print(paste0("Model complete at check = ", nchecks, ". Max Rhat = ", max(sumTab.ignore$Rhat),
+                       " and min neff = ", min(sumTab.ignore$n.eff)))
         } else {
-          sumTab.ignore <- sumTab.ignore %>%
-            filter(!str_detect_any(Parameter, par.ignore))
+          print(paste0("Model complete at check = ", nchecks, ". Max Rhat = ", max(sumTab.ignore$Rhat),
+                       ", min neff = ", min(sumTab.ignore$n.eff),
+                       ", and proportion fuzzy parameters not converged = ",
+                       round(prp.fuzzy.not.coverged, digits = 2)))
         }
+        nchecks <- nchecks + 1
       }
-      if(any(is.na(sumTab.ignore$Rhat)) | any(is.na(sumTab.ignore$n.eff))) {
-        proc$kill_tree()
-        write.csv(sumTab.ignore, paste0("Model_summary_PID",proc$get_pid(),".csv"))
-        stop(paste0("Error: One or more parameters is not being sampled.",
-                   " Check data, initial values, etc., and try again.",
-                   " See 'Model_summary_PID",proc$get_pid(),
-                   ".csv' for parameters missing Rhat or n.eff."))
-      }
-      if(length(par.fuzzy.track) > 0) {
-        Rht.fuzzy <- 1 # Putting in at least one value to avoid error later....
-        for(p in 1:length(par.fuzzy.track)) {
-          pfuz <- par.fuzzy.track[p]
-          Rht.fuzzy <- c(Rht.fuzzy,
-                         sumTab %>% filter(str_sub(Parameter, 1, nchar(pfuz) + 1) == str_c(pfuz, "[")) %>%
-                           pull(Rhat))
-        }
-        Rht.fuzzy <- Rht.fuzzy[-1]
-        prp.fuzzy.not.coverged <- (sum(round(Rht.fuzzy, digits = 1) > Rht.required, na.rm = T) /
-          length(Rht.fuzzy))
-      }
-      mod <- list(mcmcOutput = mod.out$out, summary = sumTab, mcmc.info = mcmc.info)
-      if(sav.model) R.utils::saveObject(mod, mod.nam)
-      if(rtrn.model) assign("mod", mod.nam, envir = .GlobalEnv)
-      if(!mod.check.result & length(par.fuzzy.track) == 0) {
-        print(paste0("At check = ", nchecks, ". Max Rhat = ", max(sumTab.ignore$Rhat),
-                    " and min neff = ", min(sumTab.ignore$n.eff)))
-      } else if(!mod.check.result & length(par.fuzzy.track) > 0) {
-        print(paste0("At check = ", nchecks, ". Max Rhat = ", max(sumTab.ignore$Rhat),
-                     ", min neff = ", min(sumTab.ignore$n.eff),
-                     ", and proportion fuzzy parameters not converged = ",
-                     round(prp.fuzzy.not.coverged, digits = 2)))
-      } else if(mod.check.result & length(par.fuzzy.track) == 0) {
-        print(paste0("Model complete at check = ", nchecks, ". Max Rhat = ", max(sumTab.ignore$Rhat),
-                    " and min neff = ", min(sumTab.ignore$n.eff)))
-      } else {
-        print(paste0("Model complete at check = ", nchecks, ". Max Rhat = ", max(sumTab.ignore$Rhat),
-                     ", min neff = ", min(sumTab.ignore$n.eff),
-                     ", and proportion fuzzy parameters not converged = ",
-                     round(prp.fuzzy.not.coverged, digits = 2)))
-      }
-      nchecks <- nchecks + 1
     }
     proc$kill_tree()
     if(!mod.check.result) {
