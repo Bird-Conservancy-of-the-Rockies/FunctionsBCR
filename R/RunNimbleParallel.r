@@ -128,8 +128,8 @@ RunNimbleParallel <-
                        ", and proportion fuzzy parameters not converged = ",
                        round(prp.fuzzy.not.coverged, digits = 2)))
         }
-        nchecks <- nchecks + 1
       }
+      nchecks <- nchecks + 1
     }
     proc$kill_tree()
     if(!mod.check.result) {
