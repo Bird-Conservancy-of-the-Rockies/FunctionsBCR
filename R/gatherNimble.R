@@ -14,11 +14,10 @@ gatherNimble <- function(read.path, burnin, ni.block, max.samples.saved) {
   gathr <- lapply(chns, FUN = function (s) {
     blks <- unique(m[m[,"chn"] == s, "blk"])
     lst <- lapply(blks, FUN = function (b) {
-      x <- system2(command = "lsof", args = paste0(read.path, "/", rownames(m)[m[,"chn"] == s & m[,"blk"] == b] ), stdout = TRUE)
-      # x <- try(suppressWarnings(load(file = paste0(read.path, "/", rownames(m)[m[,"chn"] == s & m[,"blk"] == b] ))))
+      x <- suppressWarnings(system2(command = "lsof", args = paste0(read.path, "/", rownames(m)[m[,"chn"] == s & m[,"blk"] == b] ), stdout = TRUE))
       while(length(x) > 0) {
         Sys.sleep(5)
-        x <- system2(command = "lsof", args = paste0(read.path, "/", rownames(m)[m[,"chn"] == s & m[,"blk"] == b] ), stdout = TRUE)
+        x <- suppressWarnings(system2(command = "lsof", args = paste0(read.path, "/", rownames(m)[m[,"chn"] == s & m[,"blk"] == b] ), stdout = TRUE))
         }
       load(file = paste0(read.path, "/", rownames(m)[m[,"chn"] == s & m[,"blk"] == b] ))
       samp
