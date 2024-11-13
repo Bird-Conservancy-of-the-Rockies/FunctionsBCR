@@ -128,6 +128,7 @@ RunNimbleParallel <-
         }
       }
       nchecks <- nchecks + 1
+      gc(verbose = FALSE)
     }
     proc$kill_tree()
     if(!mod.check.result) {
