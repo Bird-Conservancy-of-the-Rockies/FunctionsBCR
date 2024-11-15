@@ -49,6 +49,8 @@ RunNimbleParallel <-
                                  ":::",
                                  1:nc))
     proc
+    rm(data)
+    gc(verbose = FALSE)
     mod.check.result <- FALSE
     nchecks <- 1
     while(sum(str_detect(list.files(dump.path), "mod_chn")) < nc) {Sys.sleep(10)} # Wait until proc has written at least one file for each chain before going on.
@@ -128,6 +130,8 @@ RunNimbleParallel <-
         }
       }
       nchecks <- nchecks + 1
+      
+      rm(mod.check, mod.out, mod)
       gc(verbose = FALSE)
     }
     proc$kill_tree()
