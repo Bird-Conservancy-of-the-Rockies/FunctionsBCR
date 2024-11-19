@@ -33,6 +33,10 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
   }
   if(length(par.fuzzy.track) > 0) {
     Rht.fuzzy <- 1 # Putting in at least one value to avoid error later....
+    if(!any(names(s) == "Rhat")) {
+      proc$kill_tree()
+      stop("Stopped model run because Rhat not calculated.")
+    }
     for(p in 1:length(par.fuzzy.track)) {
       pfuz <- par.fuzzy.track[p]
       Rht.fuzzy <- c(Rht.fuzzy,

@@ -1,5 +1,6 @@
 runNimble <- function (mod.lst = NULL, comp.mcmc = NULL, n.iter = 1000,
-                       n.thin = 1, dump.file.path = NULL) {
+                       n.thin = 1, dump.file.path = NULL,
+                       SamplerSourcePath = NA) {
   require(nimble)
   stopifnot(sum(c(is.null(mod.lst), is.null(comp.mcmc))) == 1)
   
@@ -8,6 +9,7 @@ runNimble <- function (mod.lst = NULL, comp.mcmc = NULL, n.iter = 1000,
     cat(paste0("Initialization info:\n", nm$initializeInfo(), "\n"))
     cat(paste0("Calculate check: ", nm$calculate(), "\n"))
     nm.conf <- configureMCMC(nm, monitors = mod.lst[[5]], thin = n.thin)
+    if(!is.na(SamplerSourcePath)) source(SamplerSourcePath)
     nm.mcmc <- buildMCMC(nm.conf)
     nm.C <- compileNimble(nm)
     comp.mcmc <- compileNimble(nm.mcmc, project = nm.C)

@@ -5,7 +5,8 @@ RunNimbleParallel <-
            nc = 2, ni = 2000, nb = 0.5, nt = 10, mod.nam = "mod",
            max.samples.saved = 10000, rtrn.model = F, sav.model = T,
            Rht.required = 1.1, neff.required = 100,
-           check.freq = 10, max.tries = NULL, dump.path = "dump") {
+           check.freq = 10, max.tries = NULL, dump.path = "dump",
+           SamplerSourcePath = NA) {
     if(!rtrn.model & !sav.model) stop("There is no way for RunNimbleParallel to save output. Set either rtrn.model = TRUE or sav.model = TRUE.")
     if(nb < 1 & (ni - (ni * nb)) < 100) stop("Increase iterations (ni) or reduce burn-in. Too few samples for calculating Rhat.")
     if(nb >= 1 & (ni - nb) < 100) stop("Increase iterations (ni) or reduce burn-in. Too few samples for calculating Rhat.")
@@ -17,7 +18,8 @@ RunNimbleParallel <-
     require(mcmcOutput)
     # Also requires `parallel` package in Linux.
     if(!dir.exists(dump.path)) dir.create(dump.path)
-    save(list = c("model.path", "constants", "data", "inits", "parameters", "ni", "nt"), file = paste0(dump.path, "/NimbleObjects.RData"))
+    save(list = c("model.path", "constants", "data", "inits", "parameters", "ni", "nt", "SamplerSourcePath"),
+         file = paste0(dump.path, "/NimbleObjects.RData"))
     #[Create R script for kicking off nimble run here]. Call it "ModRunScript.R"
     #___________________________________________________________________________#
     writeLines(text = c(
@@ -30,7 +32,7 @@ RunNimbleParallel <-
       
       "load(path.NimbleWorkspace)",
       "source(model.path)",
-      "mod <- runNimble(mod.lst = list(model, constants, data, inits, parameters),",
+      "mod <- runNimble(mod.lst = list(model, constants, data, inits, parameters, SamplerSourcePath = SamplerSourcePath),",
       "n.iter = ni, n.thin = nt, dump.file.path = NULL)",
       "i <- 0",
       "repeat{",
@@ -94,6 +96,10 @@ RunNimbleParallel <-
           }
           if(length(par.fuzzy.track) > 0) {
             Rht.fuzzy <- 1 # Putting in at least one value to avoid error later....
+            if(!any(names(sumTab) == "Rhat")) {
+              proc$kill_tree()
+              stop("Stopped model run because Rhat not calculated.")
+            }
             for(p in 1:length(par.fuzzy.track)) {
               pfuz <- par.fuzzy.track[p]
               Rht.fuzzy <- c(Rht.fuzzy,
