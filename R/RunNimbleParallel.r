@@ -12,6 +12,7 @@ RunNimbleParallel <-
     if(nb >= 1 & (ni - nb) < 100) stop("Increase iterations (ni) or reduce burn-in. Too few samples for calculating Rhat.")
 
     require(nimble)
+    if(!is.na(SamplerSourcePath)) require(nimbleHMC)
     require(processx)
     # require(parallel)
     require(coda)

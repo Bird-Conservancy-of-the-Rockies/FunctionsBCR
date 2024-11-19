@@ -2,6 +2,7 @@ runNimble <- function (mod.lst = NULL, comp.mcmc = NULL, n.iter = 1000,
                        n.thin = 1, dump.file.path = NULL,
                        SamplerSourcePath = NA) {
   require(nimble)
+  if(!is.na(SamplerSourcePath)) require(nimbleHMC)
   stopifnot(sum(c(is.null(mod.lst), is.null(comp.mcmc))) == 1)
   
   if (!is.null(mod.lst)) {
