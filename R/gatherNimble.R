@@ -7,6 +7,13 @@ gatherNimble <- function(read.path, burnin, ni.block, max.samples.saved) {
   m <- cNB$m
   nblks <- cNB$nblks
   chns <- unique(m[,"chn"])
+  burnin <- cNB$burnin
+  burnin.realized <- cNB$burnin.realized
+  burnin.needed <- burnin - burnin.realized
+  if(burnin.needed < 0) {
+    proc$kill_tree()
+    stop("Additional burnin needed is negative. countNimbleBlocks burned extra samples and needs to be checked.")
+    }
   
   ## Make one matrix for each chain:
   Sys.sleep(5) # To provide time for lingering files to finish writing.
@@ -31,8 +38,13 @@ gatherNimble <- function(read.path, burnin, ni.block, max.samples.saved) {
     as.mcmc(mat[1:nr, ])
   })
   
-  ## Apply additional burnin if needed
+  ## Apply additional burnin & thinning if needed
   nc <- max(m[,1])
+  if(burnin.needed > 0) {
+    gathr.red <- lapply(gathr.red, FUN = function (mat) {
+      as.mcmc(mat[-c(1:burnin.needed), ])
+    })
+  }
   chain.length.now <- dim(gathr.red[[1]])[1] / nc
   if(is.null(max.samples.saved)) max.samples.saved <- chain.length.now
   if(max.samples.saved < chain.length.now) {
@@ -44,6 +56,7 @@ gatherNimble <- function(read.path, burnin, ni.block, max.samples.saved) {
     gathr.red <- as.mcmc.list(gathr.red)
     additional.thin.rate <- 1
   }
+  gc(verbose = FALSE)
   
   out <- mcmcOutput(gathr.red)
   return(mget(c("out", "nblks", "additional.thin.rate")))

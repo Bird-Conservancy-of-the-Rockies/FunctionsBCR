@@ -16,8 +16,9 @@ countNimbleBlocks <- function(read.path, burnin, ni.block) {
   
   # set a minimum, to implement burn-in
   if(burnin < 1) burnin <- ni.block * nblks * burnin
-  burnin.block <- burnin / ni.block
-  m <- m[m[,"blk"] > burnin.block,,drop = FALSE]
+  burnin.block <- floor(burnin / ni.block)
+  m <- m[which(m[,"blk"] > burnin.block),,drop = FALSE]
+  burnin.realized <- burnin.block * ni.block
   
-  return(mget(c("m", "nblks")))
+  return(mget(c("m", "nblks", "burnin", "burnin.realized")))
 }
