@@ -57,6 +57,13 @@ RunNimbleParallel <-
     mod.check.result <- FALSE
     nchecks <- 1
     while(sum(str_detect(list.files(dump.path), "mod_chn")) < nc) {Sys.sleep(10)} # Wait until proc has written at least one file for each chain before going on.
+    if(nb > 1) {  # Also need to wait until we've passed burnin if burnin is absolute.
+      check.blocks <- countNimbleBlocks(read.path = dump.path, burnin = nb, ni.block = ni)
+      while(nrow(check.blocks$m) > 0) {
+        Sys.sleep(10)
+        check.blocks <- countNimbleBlocks(read.path = dump.path, burnin = nb, ni.block = ni)
+      }
+    }
     nblks.previous <- 0 # Will be updated as we go.
     while(ifelse(is.null(max.tries), !mod.check.result, !mod.check.result & nchecks < max.tries)) {
       Sys.sleep(check.freq)
@@ -65,7 +72,8 @@ RunNimbleParallel <-
       if(check.blocks$nblks > nblks.previous) {
         nblks.previous <- check.blocks$nblks
         
-        mod.out <- gatherNimble(read.path = dump.path, burnin = nb, ni.block = ni, max.samples.saved = max.samples.saved)
+        mod.out <- gatherNimble(read.path = dump.path, burnin = nb, ni.block = ni,
+                                base.thin = nt, max.samples.saved = max.samples.saved)
         if(nrow(mod.out$out) >= (100 * nc)) {
           mod.check <- checkNimble(mod.out$out, Rht.required = Rht.required, neff.required = neff.required,
                                    par.ignore = par.ignore, par.dontign = par.dontign,

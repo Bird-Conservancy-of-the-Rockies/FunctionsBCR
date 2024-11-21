@@ -1,4 +1,4 @@
-gatherNimble <- function(read.path, burnin, ni.block, max.samples.saved) {
+gatherNimble <- function(read.path, burnin, ni.block, base.thin, max.samples.saved) {
   require(coda)
   require(mcmcOutput)
   require(stringr)
@@ -9,7 +9,7 @@ gatherNimble <- function(read.path, burnin, ni.block, max.samples.saved) {
   chns <- unique(m[,"chn"])
   burnin <- cNB$burnin
   burnin.realized <- cNB$burnin.realized
-  burnin.needed <- burnin - burnin.realized
+  burnin.needed <- (burnin - burnin.realized) / base.thin
   if(burnin.needed < 0) {
     proc$kill_tree()
     stop("Additional burnin needed is negative. countNimbleBlocks burned extra samples and needs to be checked.")
