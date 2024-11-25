@@ -8,16 +8,14 @@ RunNimbleParallel <-
            check.freq = 10, max.tries = NULL, dump.path = "dump",
            SamplerSourcePath = NA) {
     if(!rtrn.model & !sav.model) stop("There is no way for RunNimbleParallel to save output. Set either rtrn.model = TRUE or sav.model = TRUE.")
-    if(nb < 1 & (ni - (ni * nb)) < 100) stop("Increase iterations (ni) or reduce burn-in. Too few samples for calculating Rhat.")
-    if(nb >= 1 & (ni - nb) < 100) stop("Increase iterations (ni) or reduce burn-in. Too few samples for calculating Rhat.")
+    if(nb < 1 & ((ni - (ni * nb)) / nt) < 100) stop("Increase iterations (ni), reduce burn-in, or reduce thinning. Too few samples for calculating Rhat.")
+    if(nb >= 1 & ((ni - nb) / nt) < 100) stop("Increase iterations (ni), reduce burn-in, or reduce thinning. Too few samples for calculating Rhat.")
 
     require(nimble)
-    if(!is.na(SamplerSourcePath)) require(nimbleHMC)
+    if(!is.na(SamplerSourcePath)) require(nimbleHMC) # Included this option for NUTS sampler, which required HMC
     require(processx)
-    # require(parallel)
     require(coda)
     require(mcmcOutput)
-    # Also requires `parallel` package in Linux.
     if(!dir.exists(dump.path)) dir.create(dump.path)
     save(list = c("model.path", "constants", "data", "inits", "parameters", "ni", "nt", "SamplerSourcePath"),
          file = paste0(dump.path, "/NimbleObjects.RData"))
@@ -66,6 +64,9 @@ RunNimbleParallel <-
     }
     nblks.previous <- 0 # Will be updated as we go.
     while(ifelse(is.null(max.tries), !mod.check.result, !mod.check.result & nchecks < max.tries)) {
+      rm(mod.check, mod.out, mod)
+      gc(verbose = FALSE)
+      
       Sys.sleep(check.freq)
       
       check.blocks <- countNimbleBlocks(read.path = dump.path, burnin = nb, ni.block = ni)
@@ -145,9 +146,6 @@ RunNimbleParallel <-
         }
       }
       nchecks <- nchecks + 1
-      
-      rm(mod.check, mod.out, mod)
-      gc(verbose = FALSE)
     }
     proc$kill_tree()
     if(!mod.check.result) {
