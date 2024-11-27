@@ -42,7 +42,7 @@ RunNimbleParallel <-
     ),
     con = paste0(dump.path, "/ModRunScript.R"))
     #___________________________________________________________________________#
-    proc <- process$new(command = "parallel",
+    proc <<- process$new(command = "parallel",
                         args = c("Rscript", eval(paste0(dump.path, "/ModRunScript.R")),
                                  "{}",
                                  eval(dump.path),
@@ -57,19 +57,20 @@ RunNimbleParallel <-
     while(sum(str_detect(list.files(dump.path), "mod_chn")) < nc) {Sys.sleep(10)} # Wait until proc has written at least one file for each chain before going on.
     if(nb > 1) {  # Also need to wait until we've passed burnin if burnin is absolute.
       check.blocks <- countNimbleBlocks(read.path = dump.path, burnin = nb, ni.block = ni)
-      while(nrow(check.blocks$m) > 0) {
+      while(!nrow(check.blocks$m) > 0) {
         Sys.sleep(10)
         check.blocks <- countNimbleBlocks(read.path = dump.path, burnin = nb, ni.block = ni)
       }
     }
     nblks.previous <- 0 # Will be updated as we go.
     while(ifelse(is.null(max.tries), !mod.check.result, !mod.check.result & nchecks < max.tries)) {
-      rm(mod.check, mod.out, mod)
+      rm(mod.check, mod)
       gc(verbose = FALSE)
       
       Sys.sleep(check.freq)
       
       check.blocks <- countNimbleBlocks(read.path = dump.path, burnin = nb, ni.block = ni)
+      write.csv(check.blocks$m, paste0(dump.path, "/m.csv"))
       if(check.blocks$nblks > nblks.previous) {
         nblks.previous <- check.blocks$nblks
         
