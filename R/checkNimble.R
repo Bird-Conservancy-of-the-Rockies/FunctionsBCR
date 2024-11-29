@@ -2,7 +2,10 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
                         par.ignore = c(), par.dontign = c(),
                         par.fuzzy.track = c(), fuzzy.threshold = 0.05,
                         spit.summary = FALSE, mod.nam = "mod") {
-  s <- summary(mcmcOutput, MCEpc = T, Rhat = T, n.eff = T, f = T, overlap0 = T, verbose = FALSE)
+  ind.cols.check <- col.names(mcmcOutput) %>% (function(x) which(!str_detect_any(x, par.ignore) |
+                                                                   str_detect_any(x, par.dontign) |
+                                                                   str_detect_any(x, par.fuzzy.track))
+  s <- summary(mcmcOutput[,ind.cols.check], MCEpc = F, Rhat = T, n.eff = T, f = T, overlap0 = T, verbose = FALSE)
   s <- s %>%
     as_tibble() %>%
     mutate(Parameter = row.names(s)) %>%
@@ -35,7 +38,7 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
     Rht.fuzzy <- 1 # Putting in at least one value to avoid error later....
     if(!any(names(s) == "Rhat")) {
       proc$kill_tree()
-      write.csv(s, str_c(species, "_m_sum_at_fail.csv"), row.names = FALSE)
+      write.csv(s, str_c(species, "_sum_at_fail.csv"), row.names = FALSE)
       stop("Stopped model run because Rhat not calculated.")
     }
     for(p in 1:length(par.fuzzy.track)) {

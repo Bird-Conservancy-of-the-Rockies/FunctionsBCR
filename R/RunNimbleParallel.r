@@ -17,6 +17,9 @@ RunNimbleParallel <-
     require(coda)
     require(mcmcOutput)
     if(!dir.exists(dump.path)) dir.create(dump.path)
+    check.log.file <- paste0(dump.path, "/Check_log.csv")
+    write.csv(data.frame(Model = character(), Check = numeric(), Time = character(), Min_waited = numeric()),
+              check.log.file, row.names = FALSE)
     save(list = c("model.path", "constants", "data", "inits", "parameters", "ni", "nt", "SamplerSourcePath"),
          file = paste0(dump.path, "/NimbleObjects.RData"))
     #[Create R script for kicking off nimble run here]. Call it "ModRunScript.R"
@@ -64,12 +67,12 @@ RunNimbleParallel <-
     }
     nblks.previous <- 0 # Will be updated as we go.
     while(ifelse(is.null(max.tries), !mod.check.result, !mod.check.result & nchecks < max.tries)) {
-      rm(mod.check, mod)
-      gc(verbose = FALSE)
-      
       Sys.sleep(check.freq)
-      
       check.blocks <- countNimbleBlocks(read.path = dump.path, burnin = nb, ni.block = ni)
+      while(length(unique(check.blocks$m[,1])) == nc) {
+        Sys.sleep(check.freq)
+        check.blocks <- countNimbleBlocks(read.path = dump.path, burnin = nb, ni.block = ni)
+      }
       write.csv(check.blocks$m, paste0(dump.path, "/m.csv"))
       if(check.blocks$nblks > nblks.previous) {
         nblks.previous <- check.blocks$nblks
@@ -146,6 +149,11 @@ RunNimbleParallel <-
           warning("Still waiting for enough samples to calculate Rhat.")
         }
       }
+      check.log <- read.csv(check.log.file, colClasses = c("character", "numeric", "character", "numeric"))
+      check.log <- check.log %>% bind_rows(
+        data.frame(Model = mod.nam, Check = nchecks, Time = Sys.time(), Min_waited = (nchecks * check.freq / 60))
+      )
+      write.csv(check.log, check.log.file, row.names = FALSE)
       nchecks <- nchecks + 1
     }
     proc$kill_tree()
