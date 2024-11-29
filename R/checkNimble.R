@@ -4,8 +4,9 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
                         spit.summary = FALSE, mod.nam = "mod") {
   ind.cols.check <- col.names(mcmcOutput) %>% (function(x) which(!str_detect_any(x, par.ignore) |
                                                                    str_detect_any(x, par.dontign) |
-                                                                   str_detect_any(x, par.fuzzy.track))
-  s <- summary(mcmcOutput[,ind.cols.check], MCEpc = F, Rhat = T, n.eff = T, f = T, overlap0 = T, verbose = FALSE)
+                                                                   str_detect_any(x, par.fuzzy.track)))
+  mcmcOutput <- mcmcOutput[,ind.cols.check]
+  s <- summary(mcmcOutput, MCEpc = F, Rhat = T, n.eff = T, f = T, overlap0 = T, verbose = FALSE)
   s <- s %>%
     as_tibble() %>%
     mutate(Parameter = row.names(s)) %>%
