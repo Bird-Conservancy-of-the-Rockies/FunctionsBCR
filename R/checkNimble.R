@@ -60,7 +60,7 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
       stop(paste0("Fuzzy parameters with Inf or -Inf Rhats. Check Bad_pars_fuzzy_", mod.nam,
                   ".csv and possibly try alternative initial values or check data."))
     }
-    if(sum(round(Rht.fuzzy, digits = 1) > Rht.required, na.rm = T) >
+    if(((sum(round(Rht.fuzzy, digits = 1) > Rht.required, na.rm = TRUE) + sum(is.na(Rht.fuzzy))) / length(Rht.fuzzy)) >
         (length(Rht.fuzzy) * fuzzy.threshold)) result <- FALSE
   }
   if(spit.summary) {
