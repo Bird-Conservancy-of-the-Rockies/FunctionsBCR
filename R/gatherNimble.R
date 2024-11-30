@@ -32,11 +32,14 @@ gatherNimble <- function(read.path, burnin, ni.block, base.thin, max.samples.sav
     as.mcmc(do.call(rbind, lst))
   })
   
-  ## Make both chains the same length (doing this in countNimbleBlocks now)
-  # nr <- min(sapply(gathr, FUN = nrow))
-  # gathr <- lapply(gathr, FUN = function (mat) {
-  #   as.mcmc(mat[1:nr, ])
-  # })
+  ## Make both chains the same length
+    # already did this in countNimbleBlocks,
+    # but also formats gathr
+    # and can't hurt to do it again
+  nr <- min(sapply(gathr, FUN = nrow))
+  gathr <- lapply(gathr, FUN = function (mat) {
+    as.mcmc(mat[1:nr, ])
+  })
   
   ## Apply additional burnin & thinning if needed
   nc <- max(m[,1])
