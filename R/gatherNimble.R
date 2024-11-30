@@ -34,30 +34,30 @@ gatherNimble <- function(read.path, burnin, ni.block, base.thin, max.samples.sav
   
   ## Make both chains the same length (doing this in countNimbleBlocks now)
   # nr <- min(sapply(gathr, FUN = nrow))
-  # gathr.red <- lapply(gathr, FUN = function (mat) {
+  # gathr <- lapply(gathr, FUN = function (mat) {
   #   as.mcmc(mat[1:nr, ])
   # })
   
   ## Apply additional burnin & thinning if needed
   nc <- max(m[,1])
   if(burnin.needed > 0) {
-    gathr.red <- lapply(gathr, FUN = function (mat) {
+    gathr <- lapply(gathr, FUN = function (mat) {
       as.mcmc(mat[-c(1:burnin.needed), ])
     })
   }
-  chain.length.now <- dim(gathr.red[[1]])[1] / nc
+  chain.length.now <- dim(gathr[[1]])[1] / nc
   if(is.null(max.samples.saved)) max.samples.saved <- chain.length.now
   if(max.samples.saved < chain.length.now) {
     ind.sav <- round(seq(1, max.samples.saved, length.out = max.samples.saved))
     additional.thin.rate <- chain.length.now / length(ind.sav)
-    gathr.red <- lapply(gathr.red, FUN = function(x) as.mcmc(x[ind.sav,])) %>%
+    gathr <- lapply(gathr, FUN = function(x) as.mcmc(x[ind.sav,])) %>%
       as.mcmc.list()
   } else {
-    gathr.red <- as.mcmc.list(gathr.red)
+    gathr <- as.mcmc.list(gathr)
     additional.thin.rate <- 1
   }
   gc(verbose = FALSE)
   
-  out <- mcmcOutput(gathr.red)
+  out <- mcmcOutput(gathr)
   return(mget(c("out", "nblks", "additional.thin.rate")))
 }
