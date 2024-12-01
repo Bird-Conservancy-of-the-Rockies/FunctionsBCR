@@ -18,7 +18,8 @@ RunNimbleParallel <-
     require(mcmcOutput)
     if(!dir.exists(dump.path)) dir.create(dump.path)
     check.log.file <- paste0(dump.path, "/Check_log.csv")
-    write.csv(data.frame(Model = character(), Check = numeric(), Time = character(), Min_waited = numeric()),
+    write.csv(data.frame(Model = character(), Check = numeric(), Time = character(),
+                         Min_waited = numeric(), Status = character()),
               check.log.file, row.names = FALSE)
     save(list = c("model.path", "constants", "data", "inits", "parameters", "ni", "nt", "SamplerSourcePath"),
          file = paste0(dump.path, "/NimbleObjects.RData"))
@@ -68,8 +69,10 @@ RunNimbleParallel <-
     nblks.previous <- 0 # Will be updated as we go.
     while(ifelse(is.null(max.tries), !mod.check.result, !mod.check.result & nchecks < max.tries)) {
       Sys.sleep(check.freq)
+      status <- "No new convergence information."
       check.blocks <- countNimbleBlocks(read.path = dump.path, burnin = nb, ni.block = ni)
-      while(length(unique(check.blocks$m[,1])) == nc) {
+      if(length(unique(check.blocks$m[,1])) > nc) stop("Error: Too many sampling blocks created. Code debug needed somewhere.")
+      while(length(unique(check.blocks$m[,1])) < nc) {
         Sys.sleep(check.freq)
         check.blocks <- countNimbleBlocks(read.path = dump.path, burnin = nb, ni.block = ni)
       }
@@ -128,30 +131,32 @@ RunNimbleParallel <-
           if(sav.model) R.utils::saveObject(mod, mod.nam)
           if(rtrn.model) assign("mod", mod.nam, envir = .GlobalEnv)
           if(!mod.check.result & length(par.fuzzy.track) == 0) {
-            print(paste0("At check = ", nchecks, ". Max Rhat = ", max(sumTab.ignore$Rhat),
-                         " and min neff = ", min(sumTab.ignore$n.eff)))
+            status <- paste0("Max Rhat = ", max(sumTab.ignore$Rhat), " and min neff = ",
+                             min(sumTab.ignore$n.eff))
           } else if(!mod.check.result & length(par.fuzzy.track) > 0) {
-            print(paste0("At check = ", nchecks, ". Max Rhat = ", max(sumTab.ignore$Rhat),
-                         ", min neff = ", min(sumTab.ignore$n.eff),
-                         ", and proportion fuzzy parameters not converged = ",
-                         round(prp.fuzzy.not.coverged, digits = 2)))
+            status <- paste0("Max Rhat = ", max(sumTab.ignore$Rhat), ", min neff = ",
+                             min(sumTab.ignore$n.eff),
+                             ", and proportion fuzzy parameters not converged = ",
+                             round(prp.fuzzy.not.coverged, digits = 2))
           } else if(mod.check.result & length(par.fuzzy.track) == 0) {
-            print(paste0("Model complete at check = ", nchecks, ". Max Rhat = ", max(sumTab.ignore$Rhat),
-                         " and min neff = ", min(sumTab.ignore$n.eff)))
+            status <- paste0("Max Rhat = ", max(sumTab.ignore$Rhat),
+                             " and min neff = ", min(sumTab.ignore$n.eff))
           } else {
-            print(paste0("Model complete at check = ", nchecks, ". Max Rhat = ", max(sumTab.ignore$Rhat),
-                         ", min neff = ", min(sumTab.ignore$n.eff),
-                         ", and proportion fuzzy parameters not converged = ",
-                         round(prp.fuzzy.not.coverged, digits = 2)))
+            status <- paste0("Max Rhat = ", max(sumTab.ignore$Rhat),
+                             ", min neff = ", min(sumTab.ignore$n.eff),
+                             ", and proportion fuzzy parameters not converged = ",
+                             round(prp.fuzzy.not.coverged, digits = 2))
           }
         } else {
           nchecks <- nchecks - 1
           warning("Still waiting for enough samples to calculate Rhat.")
         }
       }
-      check.log <- read.csv(check.log.file, colClasses = c("character", "numeric", "character", "numeric"))
+      check.log <- read.csv(check.log.file, colClasses = c("character", "numeric", "character",
+                                                           "numeric", "character"))
       check.log <- check.log %>% bind_rows(
-        data.frame(Model = mod.nam, Check = nchecks, Time = Sys.time(), Min_waited = (nchecks * check.freq / 60))
+        data.frame(Model = mod.nam, Check = nchecks, Time = Sys.time(),
+                   Min_waited = (nchecks * check.freq / 60), Status = status)
       )
       write.csv(check.log, check.log.file, row.names = FALSE)
       nchecks <- nchecks + 1
