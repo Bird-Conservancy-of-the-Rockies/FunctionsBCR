@@ -18,7 +18,7 @@ countNimbleBlocks <- function(read.path, burnin, ni.block) {
       m[which(m[,"chn"] == chn), "blk"] <- 1:length(ind.blks)
   }
   nblks <- min(tapply(m[,2], m[,1], max))
-  m <- m[-which(m[,2] > nblks),] # Make chains same length (chop off excess blocks on longer chains)
+  m <- m[which(m[,2] <= nblks),] # Make chains same length (chop off excess blocks on longer chains)
   
   # Drop blocks that only contain burnin
   if(burnin < 1) burnin <- ni.block * nblks * burnin
