@@ -2,10 +2,18 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
                         par.ignore = c(), par.dontign = c(),
                         par.fuzzy.track = c(), fuzzy.threshold = 0.05,
                         spit.summary = FALSE, mod.nam = "mod") {
-  ind.cols.check <- col.names(mcmcOutput) %>% (function(x) which(!str_detect_any(x, par.ignore) |
-                                                                   str_detect_any(x, par.dontign) |
-                                                                   str_detect_any(x, par.fuzzy.track)))
-  mcmcOutput <- mcmcOutput[,ind.cols.check]
+  # if(!is.null(par.ignore)) { # Would be nice to do this to save time, but need to figure out how to get it back to mcmcOutput format.
+  #   ind.cols.check <- colnames(mcmcOutput) %>% (function(x) which(!str_detect_any(x, par.ignore)))
+  #   if(!is.null(par.dontign)) {
+  #     ind.cols.check <- c(ind.cols.check,
+  #                         colnames(mcmcOutput) %>%
+  #                           (function(x) which(str_detect_any(x, par.dontign))))
+  #     if(!is.null(par.fuzzy.track)) ind.cols.check <- c(ind.cols.check,
+  #                                                       colnames(mcmcOutput) %>%
+  #                                                         (function(x) which(str_detect_any(x, par.fuzzy.track))))
+  #   }
+  #   mcmcOutput <- mcmcOutput[,ind.cols.check]
+  # }
   s <- summary(mcmcOutput, MCEpc = F, Rhat = T, n.eff = T, f = T, overlap0 = T, verbose = FALSE)
   s <- s %>%
     as_tibble() %>%
