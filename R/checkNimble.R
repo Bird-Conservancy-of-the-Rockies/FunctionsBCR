@@ -2,18 +2,24 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
                         par.ignore = c(), par.dontign = c(),
                         par.fuzzy.track = c(), fuzzy.threshold = 0.05,
                         spit.summary = FALSE, mod.nam = "mod") {
-  # if(!is.null(par.ignore)) { # Would be nice to do this to save time, but need to figure out how to get it back to mcmcOutput format.
-  #   ind.cols.check <- colnames(mcmcOutput) %>% (function(x) which(!str_detect_any(x, par.ignore)))
-  #   if(!is.null(par.dontign)) {
-  #     ind.cols.check <- c(ind.cols.check,
-  #                         colnames(mcmcOutput) %>%
-  #                           (function(x) which(str_detect_any(x, par.dontign))))
-  #     if(!is.null(par.fuzzy.track)) ind.cols.check <- c(ind.cols.check,
-  #                                                       colnames(mcmcOutput) %>%
-  #                                                         (function(x) which(str_detect_any(x, par.fuzzy.track))))
-  #   }
-  #   mcmcOutput <- mcmcOutput[,ind.cols.check]
-  # }
+  require(mcmcOutput)
+  
+  if(!is.null(par.ignore)) { # Would be nice to do this to save time, but need to figure out how to get it back to mcmcOutput format.
+    ind.cols.check <- which(!str_detect_any(colnames(mcmcOutput), par.ignore))
+    if(!is.null(par.dontign)) {
+      ind.cols.check <- c(ind.cols.check,
+                          which(str_detect_any(colnames(mcmcOutput), par.dontign))) %>%
+        unique()
+      if(!is.null(par.fuzzy.track)) ind.cols.check <- c(ind.cols.check,
+                                                        which(str_detect_any(colnames(mcmcOutput), par.fuzzy.track))) %>%
+          unique()
+    }
+    nc <- dim(mcmcOutput[,,])[2]
+    mcmcOutput.reduce <- list()
+    for(i in 1:nc) mcmcOutput.reduce[[i]] <- as.mcmc(mcmcOutput[,i,ind.cols.check])
+    mcmcOutput <- mcmcOutput.reduce %>% as.mcmc.list() %>% mcmcOutput()
+    rm(i, mcmcOutput.reduce)
+  }
   s <- summary(mcmcOutput, MCEpc = F, Rhat = T, n.eff = T, f = T, overlap0 = T, verbose = FALSE)
   s <- s %>%
     as_tibble() %>%

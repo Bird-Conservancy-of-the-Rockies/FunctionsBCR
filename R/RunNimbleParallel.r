@@ -35,13 +35,14 @@ RunNimbleParallel <-
       
       "load(path.NimbleWorkspace)",
       "source(model.path)",
-      "mod <- runNimble(mod.lst = list(model, constants, data, inits, parameters, SamplerSourcePath = SamplerSourcePath),",
-      "n.iter = ni, n.thin = nt, dump.file.path = NULL)",
-      "i <- 0",
+      "i <- 1",
+      "dump.file.path <- paste0(dump.path, '/mod_chn', chn, '_', i, '.RData')",
+      "mod.comp <- runNimble(mod.lst = list(model, constants, data, inits, parameters, SamplerSourcePath = SamplerSourcePath),",
+      "n.iter = ni, n.thin = nt, dump.file.path = dump.file.path)",
       "repeat{",
       "i <- i + 1",
       "dump.file.path <- paste0(dump.path, '/mod_chn', chn, '_', i, '.RData')",
-      "mod <- runNimble(comp.mcmc = mod$comp.mcmc, n.iter = ni, dump.file.path = dump.file.path)",
+      "mod.comp <- runNimble(comp.mcmc = mod.comp, n.iter = ni, dump.file.path = dump.file.path)",
       "}"
     ),
     con = paste0(dump.path, "/ModRunScript.R"))

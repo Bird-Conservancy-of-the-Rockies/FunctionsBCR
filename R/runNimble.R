@@ -1,5 +1,5 @@
 runNimble <- function (mod.lst = NULL, comp.mcmc = NULL, n.iter = 1000,
-                       n.thin = 1, dump.file.path = NULL,
+                       n.thin = 1, dump.file.path,
                        SamplerSourcePath = NA) {
   require(nimble)
   if(!is.na(SamplerSourcePath)) require(nimbleHMC)
@@ -14,18 +14,12 @@ runNimble <- function (mod.lst = NULL, comp.mcmc = NULL, n.iter = 1000,
     nm.mcmc <- buildMCMC(nm.conf)
     nm.C <- compileNimble(nm)
     comp.mcmc <- compileNimble(nm.mcmc, project = nm.C)
-    samp <- runMCMC(comp.mcmc, niter = n.iter)
+    comp.mcmc$run(niter = n.iter)
   } else {
-    if (!is.null(dump.file.path)) {
-      samp <- as.matrix(comp.mcmc$mvSamples)
-      save(samp, file = dump.file.path)
-      rm(samp)
-      comp.mcmc$run(niter = n.iter, reset = FALSE, resetMV = TRUE)
-    } else {
-      comp.mcmc$run(niter = n.iter, reset = FALSE, resetMV = FALSE)
-    }
-    samp <- as.matrix(comp.mcmc$mvSamples)
+    comp.mcmc$run(niter = n.iter, reset = FALSE, resetMV = TRUE)
   }
+  samp <- as.matrix(comp.mcmc$mvSamples)
+  save(samp, file = dump.file.path)
   
-  return(mget(c("samp", "comp.mcmc")))
+  return(comp.mcmc)
 }
