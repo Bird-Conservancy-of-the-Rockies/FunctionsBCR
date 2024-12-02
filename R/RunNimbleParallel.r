@@ -155,7 +155,7 @@ RunNimbleParallel <-
       check.log <- read.csv(check.log.file, colClasses = c("character", "numeric", "character",
                                                            "numeric", "character"))
       check.log <- check.log %>% bind_rows(
-        data.frame(Model = mod.nam, Check = nchecks, Time = Sys.time(),
+        data.frame(Model = mod.nam, Check = nchecks, Time = as.character(Sys.time()),
                    Min_waited = (nchecks * check.freq / 60), Status = status)
       )
       write.csv(check.log, check.log.file, row.names = FALSE)
