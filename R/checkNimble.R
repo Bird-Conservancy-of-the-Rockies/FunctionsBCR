@@ -4,7 +4,7 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
                         spit.summary = FALSE, mod.nam = "mod") {
   require(mcmcOutput)
   
-  if(!is.null(par.ignore)) { # Would be nice to do this to save time, but need to figure out how to get it back to mcmcOutput format.
+  if(!is.null(par.ignore)) {
     ind.cols.check <- which(!str_detect_any(colnames(mcmcOutput), par.ignore))
     if(!is.null(par.dontign)) {
       ind.cols.check <- c(ind.cols.check,
