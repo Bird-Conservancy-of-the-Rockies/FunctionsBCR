@@ -33,19 +33,19 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
                             !str_detect_any(s$Parameter, par.dontign))
     }
     if(length(ind.ignore) > 0) {
-      s.ignored <- s %>% slice(-ind.ignore)
+      s.focal <- s %>% slice(-ind.ignore)
     } else {
-      s.ignored <- s
+      s.focal <- s
     }
-    if(any(is.na(s.ignored$Rhat))) {
-      write.csv(s.ignored %>% filter(is.na(Rhat) | Rhat %in% c(Inf, -Inf)), paste0("Bad_pars_", mod.nam, ".csv"))
+    if(any(is.na(s.focal$Rhat))) {
+      write.csv(s.focal %>% filter(is.na(Rhat) | Rhat %in% c(Inf, -Inf)), paste0("Bad_pars_", mod.nam, ".csv"))
       stop(paste0("Parameters missing Rhat. Check Bad_pars_", mod.nam, ".csv and possibly try alternative initial values or check data."))
     }
-    if(any(s.ignored$Rhat %in% c(Inf, -Inf))) {
-      write.csv(s.ignored %>% filter(Rhat %in% c(Inf, -Inf)), paste0("Bad_pars_", mod.nam, ".csv"))
+    if(any(s.focal$Rhat %in% c(Inf, -Inf))) {
+      write.csv(s.focal %>% filter(Rhat %in% c(Inf, -Inf)), paste0("Bad_pars_", mod.nam, ".csv"))
       stop(paste0("Parameters with Inf or -Inf Rhats. Check Bad_pars_", mod.nam, ".csv and possibly try alternative initial values or check data."))
     }
-    result <- max(s.ignored$Rhat) <= Rht.required & min(s.ignored$n.eff) >= neff.required
+    result <- max(s.focal$Rhat) <= Rht.required & min(s.focal$n.eff) >= neff.required
   } else {
     result <- max(s$Rhat) <= Rht.required & min(s$n.eff) >= neff.required
   }
@@ -69,7 +69,7 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
       stop(paste0("Fuzzy parameters missing Rhat. Check Bad_pars_fuzzy_", mod.nam,
                   ".csv and possibly try alternative initial values or check data."))
     }
-    if(any(s.ignored$Rhat %in% c(Inf, -Inf))) {
+    if(any(s.focal$Rhat %in% c(Inf, -Inf))) {
       write.csv(s %>% filter(str_sub(Parameter, 1, nchar(pfuz) + 1) == str_c(pfuz, "[")) %>%
                   filter(Rhat %in% c(Inf, -Inf)), paste0("Bad_pars_fuzzy_", mod.nam, ".csv"))
       stop(paste0("Fuzzy parameters with Inf or -Inf Rhats. Check Bad_pars_fuzzy_", mod.nam,

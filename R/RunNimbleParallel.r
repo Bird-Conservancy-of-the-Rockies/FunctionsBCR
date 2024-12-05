@@ -94,19 +94,19 @@ RunNimbleParallel <-
           mcmc.info <- c(nchains = nc, niterations = ni*nblks,
                          burnin = ifelse(nb<1, nb*ni*nblks, nb),
                          nthin = nt*thin.additional)
-          sumTab <- sumTab.ignore <- mod.check$s
+          sumTab <- sumTab.focal <- mod.check$s
           if(length(par.ignore) > 0) {
+            sumTab.focal <- sumTab %>%
+              filter(!str_detect_any(Parameter, par.ignore))
             if(length(par.dontign) > 0) {
-              sumTab.ignore <- sumTab.ignore %>%
-                filter(!str_detect_any(Parameter, par.ignore) | str_detect_any(Parameter, par.dontign))
-            } else {
-              sumTab.ignore <- sumTab.ignore %>%
-                filter(!str_detect_any(Parameter, par.ignore))
+              sumTab.focal <- sumTab.focal %>% bind_rows(
+                sumTab %>% filter(str_detect_any(Parameter, par.dontign))
+              )
             }
           }
-          if(any(is.na(sumTab.ignore$Rhat)) | any(is.na(sumTab.ignore$n.eff))) {
+          if(any(is.na(sumTab.focal$Rhat)) | any(is.na(sumTab.focal$n.eff))) {
             proc$kill_tree()
-            write.csv(sumTab.ignore, paste0("Model_summary_PID",proc$get_pid(),".csv"))
+            write.csv(sumTab.focal, paste0("Model_summary_PID",proc$get_pid(),".csv"))
             stop(paste0("Error: One or more parameters is not being sampled.",
                         " Check data, initial values, etc., and try again.",
                         " See 'Model_summary_PID",proc$get_pid(),
@@ -132,19 +132,19 @@ RunNimbleParallel <-
           if(sav.model) R.utils::saveObject(mod, mod.nam)
           if(rtrn.model) assign("mod", mod.nam, envir = .GlobalEnv)
           if(!mod.check.result & length(par.fuzzy.track) == 0) {
-            status <- paste0("Max Rhat = ", max(sumTab.ignore$Rhat), " and min neff = ",
-                             min(sumTab.ignore$n.eff))
+            status <- paste0("Max Rhat = ", max(sumTab.focal$Rhat), " and min neff = ",
+                             min(sumTab.focal$n.eff))
           } else if(!mod.check.result & length(par.fuzzy.track) > 0) {
-            status <- paste0("Max Rhat = ", max(sumTab.ignore$Rhat), ", min neff = ",
-                             min(sumTab.ignore$n.eff),
+            status <- paste0("Max Rhat = ", max(sumTab.focal$Rhat), ", min neff = ",
+                             min(sumTab.focal$n.eff),
                              ", and proportion fuzzy parameters not converged = ",
                              round(prp.fuzzy.not.coverged, digits = 2))
           } else if(mod.check.result & length(par.fuzzy.track) == 0) {
-            status <- paste0("Max Rhat = ", max(sumTab.ignore$Rhat),
-                             " and min neff = ", min(sumTab.ignore$n.eff))
+            status <- paste0("Max Rhat = ", max(sumTab.focal$Rhat),
+                             " and min neff = ", min(sumTab.focal$n.eff))
           } else {
-            status <- paste0("Max Rhat = ", max(sumTab.ignore$Rhat),
-                             ", min neff = ", min(sumTab.ignore$n.eff),
+            status <- paste0("Max Rhat = ", max(sumTab.focal$Rhat),
+                             ", min neff = ", min(sumTab.focal$n.eff),
                              ", and proportion fuzzy parameters not converged = ",
                              round(prp.fuzzy.not.coverged, digits = 2))
           }
