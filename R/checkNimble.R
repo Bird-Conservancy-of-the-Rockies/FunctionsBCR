@@ -16,7 +16,7 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
     }
     nc <- dim(mcmcOutput[,,])[2]
     mcmcOutput.reduce <- list()
-    for(i in 1:nc) mcmcOutput.reduce[[i]] <- as.mcmc(mcmcOutput[,i,ind.cols.check])
+    for(i in 1:nc) mcmcOutput.reduce[[i]] <- as.mcmc(mcmcOutput[,i,ind.cols.check,drop=FALSE])
     mcmcOutput <- mcmcOutput.reduce %>% as.mcmc.list() %>% mcmcOutput()
     rm(i, mcmcOutput.reduce)
   }
@@ -41,7 +41,7 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
       write.csv(s.focal %>% filter(is.na(Rhat) | Rhat %in% c(Inf, -Inf)), paste0("Bad_pars_", mod.nam, ".csv"))
       stop(paste0("Parameters missing Rhat. Check Bad_pars_", mod.nam, ".csv and possibly try alternative initial values or check data."))
     }
-    if(any(s.focal$Rhat %in% c(Inf, -Inf))) {
+    if(any(s.focal$Rhat %in% c(Inf, -Inf))) { # This doesn't seem to be working. Getting -Inf for Rhat with function continuing to run.
       write.csv(s.focal %>% filter(Rhat %in% c(Inf, -Inf)), paste0("Bad_pars_", mod.nam, ".csv"))
       stop(paste0("Parameters with Inf or -Inf Rhats. Check Bad_pars_", mod.nam, ".csv and possibly try alternative initial values or check data."))
     }
