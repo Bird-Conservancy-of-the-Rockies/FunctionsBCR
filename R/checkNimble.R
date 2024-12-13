@@ -15,10 +15,17 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
           unique()
     }
     nc <- dim(mcmcOutput[,,])[2]
+    nsamp <- dim(mcmcOutput[,,])[1]
     mcmcOutput.reduce <- list()
-    for(i in 1:nc) mcmcOutput.reduce[[i]] <- as.mcmc(mcmcOutput[,,][,i,ind.cols.check,drop=FALSE][,1,])
+    pnams.keep <- dimnames(mcmcOutput)[[2]][ind.cols.check]
+    for(i in 1:nc) {
+      mcmc.array <- mcmcOutput[,,][,i,ind.cols.check]
+      mcmc.array <- array(mcmc.array, dim = c(nsamp, length(pnams.keep)))
+      dimnames(mcmc.array)[[2]] <- pnams.keep
+      mcmcOutput.reduce[[i]] <- as.mcmc(mcmc.array)
+    }
     mcmcOutput <- mcmcOutput.reduce %>% as.mcmc.list() %>% mcmcOutput()
-    rm(i, mcmcOutput.reduce)
+    rm(i, mcmc.array, mcmcOutput.reduce, pnams.keep)
   }
   s <- summary(mcmcOutput, MCEpc = F, Rhat = T, n.eff = T, f = T, overlap0 = T, verbose = FALSE)
   s <- s %>%
