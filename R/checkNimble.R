@@ -16,7 +16,7 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
     }
     nc <- dim(mcmcOutput[,,])[2]
     mcmcOutput.reduce <- list()
-    for(i in 1:nc) mcmcOutput.reduce[[i]] <- as.mcmc(mcmcOutput[,i,ind.cols.check,drop=FALSE])
+    for(i in 1:nc) mcmcOutput.reduce[[i]] <- as.mcmc(mcmcOutput[,i,ind.cols.check,drop=FALSE][,1,])
     mcmcOutput <- mcmcOutput.reduce %>% as.mcmc.list() %>% mcmcOutput()
     rm(i, mcmcOutput.reduce)
   }
