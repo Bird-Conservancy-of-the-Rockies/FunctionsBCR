@@ -11,6 +11,10 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
                                                                                       par.ignore = par.ignore)
   
   s <- summary(mcmcOutput, MCEpc = F, Rhat = T, n.eff = T, f = T, overlap0 = T, verbose = FALSE)
+  if(!any(names(s) == "Rhat")) {
+    proc$kill_tree()
+    stop("Rhat not calculated. Troubleshoot mcmcOuput.")
+  }
   s <- s %>%
     as_tibble() %>%
     mutate(Parameter = row.names(s)) %>%
