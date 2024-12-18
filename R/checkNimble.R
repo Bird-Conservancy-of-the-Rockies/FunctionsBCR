@@ -4,29 +4,12 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
                         spit.summary = FALSE, mod.nam = "mod") {
   require(mcmcOutput)
   
-  if(!is.null(par.ignore)) {
-    ind.cols.check <- which(!str_detect_any(colnames(mcmcOutput), par.ignore))
-    if(!is.null(par.dontign)) {
-      ind.cols.check <- c(ind.cols.check,
-                          which(str_detect_any(colnames(mcmcOutput), par.dontign))) %>%
-        unique()
-      if(!is.null(par.fuzzy.track)) ind.cols.check <- c(ind.cols.check,
-                                                        which(str_detect_any(colnames(mcmcOutput), par.fuzzy.track))) %>%
-          unique()
-    }
-    nc <- dim(mcmcOutput[,,])[2]
-    nsamp <- dim(mcmcOutput[,,])[1]
-    mcmcOutput.reduce <- list()
-    pnams.keep <- dimnames(mcmcOutput)[[2]][ind.cols.check]
-    for(i in 1:nc) {
-      mcmc.array <- mcmcOutput[,,][,i,ind.cols.check]
-      mcmc.array <- array(mcmc.array, dim = c(nsamp, length(pnams.keep)))
-      dimnames(mcmc.array)[[2]] <- pnams.keep
-      mcmcOutput.reduce[[i]] <- as.mcmc(mcmc.array)
-    }
-    mcmcOutput <- mcmcOutput.reduce %>% as.mcmc.list() %>% mcmcOutput()
-    rm(i, mcmc.array, mcmcOutput.reduce, pnams.keep)
-  }
+  if(!is.null(par.ignore) & is.null(par.fuzzy.track)) mcmcOutput <- mcmcOutputSubset(mcmcOutput,
+                                                                                     par.ignore = par.ignore)
+  if(!is.null(par.ignore) & !is.null(par.fuzzy.track)) mcmcOutput <- mcmcOutputSubset(mcmcOutput,
+                                                                                      par.summarize = par.fuzzy.track,
+                                                                                      par.ignore = par.ignore)
+  
   s <- summary(mcmcOutput, MCEpc = F, Rhat = T, n.eff = T, f = T, overlap0 = T, verbose = FALSE)
   s <- s %>%
     as_tibble() %>%
