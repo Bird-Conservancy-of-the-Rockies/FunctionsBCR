@@ -49,7 +49,7 @@ mcmcOutputSubset <- function(mcmcOutput, par.summarize = c(), par.ignore = c()) 
     }
   }
   
-  if(length(want.cols == 1)) stop("Unfortunately, creation of mcmcOutput object does not work with only one parameter. Either add a parameter to 'par.summarize' or remove a parameter from 'par.ignore'.")
+  if(length(want.cols) == 1) stop("Unfortunately, creation of mcmcOutput object does not work with only one parameter. Either add a parameter to 'par.summarize' or remove a parameter from 'par.ignore'.")
   mcmcOutput.lst <- lapply(as.data.frame(m), FUN = function(v) {
     as.mcmc(mcmcOutput[,][v[1]:v[2], want.cols, drop = FALSE])
   })
