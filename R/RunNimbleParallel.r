@@ -2,7 +2,7 @@ RunNimbleParallel <-
   function(model.path, inits, data, constants, parameters,
            par.ignore = c(), par.dontign = c(),
            par.fuzzy.track = c(), fuzzy.threshold = 0.05,
-           nc = 2, ni = 2000, nb = 0.5, nt = 10, mod.nam = "mod",
+           nc = 2, ni = 2000, nb = 0.5, nt = 1, mod.nam = "mod",
            max.samples.saved = 10000, rtrn.model = F, sav.model = T,
            Rht.required = 1.1, neff.required = 100,
            check.freq = 10, max.tries = NULL, dump.path = "dump",
