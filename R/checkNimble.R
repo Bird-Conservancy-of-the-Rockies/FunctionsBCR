@@ -5,10 +5,11 @@ checkNimble <- function(mcmcOutput, Rht.required = 1.1, neff.required = 100,
   require(mcmcOutput)
   
   if(!is.null(par.ignore) & is.null(par.fuzzy.track)) mcmcOutput <- mcmcOutputSubset(mcmcOutput,
-                                                                                     par.ignore = par.ignore)
+                                                                                     par.drop = par.ignore)
   if(!is.null(par.ignore) & !is.null(par.fuzzy.track)) mcmcOutput <- mcmcOutputSubset(mcmcOutput,
-                                                                                      par.summarize = par.fuzzy.track,
-                                                                                      par.ignore = par.ignore)
+                                                                                      par.keep = c(par.dontign,
+                                                                                                   par.fuzzy.track),
+                                                                                      par.drop = par.ignore)
   
   s <- summary(mcmcOutput, MCEpc = F, Rhat = T, n.eff = T, f = T, overlap0 = T, verbose = FALSE)
   if(!any(names(s) == "Rhat")) {
