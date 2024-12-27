@@ -73,7 +73,8 @@ RunNimbleParallel <-
       status <- "No new convergence information."
       check.blocks <- countNimbleBlocks(read.path = dump.path, burnin = nb, ni.block = ni)
       if(length(unique(check.blocks$m[,1])) > nc) stop("Error: Too many sampling blocks created. Code debug needed somewhere.")
-      while(length(unique(check.blocks$m[,1])) < nc) {
+      while(length(unique(check.blocks$m[,1])) < nc |
+            (check.blocks$nblks * ni) <= 100) {
         Sys.sleep(check.freq)
         check.blocks <- countNimbleBlocks(read.path = dump.path, burnin = nb, ni.block = ni)
       }
@@ -83,74 +84,69 @@ RunNimbleParallel <-
         
         mod.out <- gatherNimble(read.path = dump.path, burnin = nb, ni.block = ni,
                                 base.thin = nt, max.samples.saved = max.samples.saved)
-        if(nrow(mod.out$out) >= (100 * nc)) {
-          mod.check <- checkNimble(mod.out$out, Rht.required = Rht.required, neff.required = neff.required,
-                                   par.ignore = par.ignore, par.dontign = par.dontign,
-                                   par.fuzzy.track = par.fuzzy.track, fuzzy.threshold = fuzzy.threshold,
-                                   spit.summary = TRUE, mod.nam = mod.nam)
-          mod.check.result <- mod.check$result
-          nblks <- mod.out$nblks
-          thin.additional <- mod.out$additional.thin.rate
-          mcmc.info <- c(nchains = nc, niterations = ni*nblks,
-                         burnin = ifelse(nb<1, nb*ni*nblks, nb),
-                         nthin = nt*thin.additional)
-          sumTab <- sumTab.focal <- mod.check$s
-          if(length(par.ignore) > 0) {
-            sumTab.focal <- sumTab %>%
-              filter(!str_detect_any(Parameter, par.ignore))
-            if(length(par.dontign) > 0) {
-              sumTab.focal <- sumTab.focal %>% bind_rows(
-                sumTab %>% filter(str_detect_any(Parameter, par.dontign))
-              )
-            }
+        mod.check <- checkNimble(mod.out$out, Rht.required = Rht.required, neff.required = neff.required,
+                                 par.ignore = par.ignore, par.dontign = par.dontign,
+                                 par.fuzzy.track = par.fuzzy.track, fuzzy.threshold = fuzzy.threshold,
+                                 spit.summary = TRUE, mod.nam = mod.nam)
+        mod.check.result <- mod.check$result
+        nblks <- mod.out$nblks
+        thin.additional <- mod.out$additional.thin.rate
+        mcmc.info <- c(nchains = nc, niterations = ni*nblks,
+                       burnin = ifelse(nb<1, nb*ni*nblks, nb),
+                       nthin = nt*thin.additional)
+        sumTab <- sumTab.focal <- mod.check$s
+        if(length(par.ignore) > 0) {
+          sumTab.focal <- sumTab %>%
+            filter(!str_detect_any(Parameter, par.ignore))
+          if(length(par.dontign) > 0) {
+            sumTab.focal <- sumTab.focal %>% bind_rows(
+              sumTab %>% filter(str_detect_any(Parameter, par.dontign))
+            )
           }
-          if(any(is.na(sumTab.focal$Rhat)) | any(is.na(sumTab.focal$n.eff))) {
+        }
+        if(any(is.na(sumTab.focal$Rhat)) | any(is.na(sumTab.focal$n.eff))) {
+          proc$kill_tree()
+          write.csv(sumTab.focal, paste0("Model_summary_PID",proc$get_pid(),".csv"))
+          stop(paste0("Error: One or more parameters is not being sampled.",
+                      " Check data, initial values, etc., and try again.",
+                      " See 'Model_summary_PID",proc$get_pid(),
+                      ".csv' for parameters missing Rhat or n.eff."))
+        }
+        if(length(par.fuzzy.track) > 0) {
+          Rht.fuzzy <- 1 # Putting in at least one value to avoid error later....
+          if(!any(names(sumTab) == "Rhat")) {
             proc$kill_tree()
-            write.csv(sumTab.focal, paste0("Model_summary_PID",proc$get_pid(),".csv"))
-            stop(paste0("Error: One or more parameters is not being sampled.",
-                        " Check data, initial values, etc., and try again.",
-                        " See 'Model_summary_PID",proc$get_pid(),
-                        ".csv' for parameters missing Rhat or n.eff."))
+            stop("Stopped model run because Rhat not calculated.")
           }
-          if(length(par.fuzzy.track) > 0) {
-            Rht.fuzzy <- 1 # Putting in at least one value to avoid error later....
-            if(!any(names(sumTab) == "Rhat")) {
-              proc$kill_tree()
-              stop("Stopped model run because Rhat not calculated.")
-            }
-            for(p in 1:length(par.fuzzy.track)) {
-              pfuz <- par.fuzzy.track[p]
-              Rht.fuzzy <- c(Rht.fuzzy,
-                             sumTab %>% filter(str_sub(Parameter, 1, nchar(pfuz) + 1) == str_c(pfuz, "[")) %>%
-                               pull(Rhat))
-            }
-            Rht.fuzzy <- Rht.fuzzy[-1]
-            prp.fuzzy.not.coverged <- (sum(round(Rht.fuzzy, digits = 1) > Rht.required, na.rm = T) /
-                                         length(Rht.fuzzy))
+          for(p in 1:length(par.fuzzy.track)) {
+            pfuz <- par.fuzzy.track[p]
+            Rht.fuzzy <- c(Rht.fuzzy,
+                           sumTab %>% filter(str_sub(Parameter, 1, nchar(pfuz) + 1) == str_c(pfuz, "[")) %>%
+                             pull(Rhat))
           }
-          mod <- list(mcmcOutput = mod.out$out, summary = sumTab, mcmc.info = mcmc.info)
-          if(sav.model) R.utils::saveObject(mod, mod.nam)
-          if(rtrn.model) assign("mod", mod.nam, envir = .GlobalEnv)
-          if(!mod.check.result & length(par.fuzzy.track) == 0) {
-            status <- paste0("Max Rhat = ", max(sumTab.focal$Rhat), " and min neff = ",
-                             min(sumTab.focal$n.eff))
-          } else if(!mod.check.result & length(par.fuzzy.track) > 0) {
-            status <- paste0("Max Rhat = ", max(sumTab.focal$Rhat), ", min neff = ",
-                             min(sumTab.focal$n.eff),
-                             ", and proportion fuzzy parameters not converged = ",
-                             round(prp.fuzzy.not.coverged, digits = 2))
-          } else if(mod.check.result & length(par.fuzzy.track) == 0) {
-            status <- paste0("Max Rhat = ", max(sumTab.focal$Rhat),
-                             " and min neff = ", min(sumTab.focal$n.eff))
-          } else {
-            status <- paste0("Max Rhat = ", max(sumTab.focal$Rhat),
-                             ", min neff = ", min(sumTab.focal$n.eff),
-                             ", and proportion fuzzy parameters not converged = ",
-                             round(prp.fuzzy.not.coverged, digits = 2))
-          }
+          Rht.fuzzy <- Rht.fuzzy[-1]
+          prp.fuzzy.not.coverged <- (sum(round(Rht.fuzzy, digits = 1) > Rht.required, na.rm = T) /
+                                       length(Rht.fuzzy))
+        }
+        mod <- list(mcmcOutput = mod.out$out, summary = sumTab, mcmc.info = mcmc.info)
+        if(sav.model) R.utils::saveObject(mod, mod.nam)
+        if(rtrn.model) assign("mod", mod.nam, envir = .GlobalEnv)
+        if(!mod.check.result & length(par.fuzzy.track) == 0) {
+          status <- paste0("Max Rhat = ", max(sumTab.focal$Rhat), " and min neff = ",
+                           min(sumTab.focal$n.eff))
+        } else if(!mod.check.result & length(par.fuzzy.track) > 0) {
+          status <- paste0("Max Rhat = ", max(sumTab.focal$Rhat), ", min neff = ",
+                           min(sumTab.focal$n.eff),
+                           ", and proportion fuzzy parameters not converged = ",
+                           round(prp.fuzzy.not.coverged, digits = 2))
+        } else if(mod.check.result & length(par.fuzzy.track) == 0) {
+          status <- paste0("Max Rhat = ", max(sumTab.focal$Rhat),
+                           " and min neff = ", min(sumTab.focal$n.eff))
         } else {
-          nchecks <- nchecks - 1
-          warning("Still waiting for enough samples to calculate Rhat.")
+          status <- paste0("Max Rhat = ", max(sumTab.focal$Rhat),
+                           ", min neff = ", min(sumTab.focal$n.eff),
+                           ", and proportion fuzzy parameters not converged = ",
+                           round(prp.fuzzy.not.coverged, digits = 2))
         }
       }
       check.log <- read.csv(check.log.file, colClasses = c("character", "numeric", "character",
