@@ -8,8 +8,8 @@ RunNimbleParallel <-
            check.freq = 10, max.tries = NULL, dump.path = "dump",
            SamplerSourcePath = NA) {
     if(!rtrn.model & !sav.model) stop("There is no way for RunNimbleParallel to save output. Set either rtrn.model = TRUE or sav.model = TRUE.")
-    if(nb < 1 & ((ni - (ni * nb)) / nt) < 100) stop("Increase iterations (ni), reduce burn-in, or reduce thinning. Too few samples for calculating Rhat.")
-    if(nb >= 1 & ((ni - nb) / nt) < 100) stop("Increase iterations (ni), reduce burn-in, or reduce thinning. Too few samples for calculating Rhat.")
+    if(nb < 1 & ((ni - (ni * nb)) / nt) <= 100) stop("Increase iterations (ni), reduce burn-in, or reduce thinning. Too few samples for calculating Rhat.")
+    if(nb >= 1 & ((ni - nb) / nt) <= 100) stop("Increase iterations (ni), reduce burn-in, or reduce thinning. Too few samples for calculating Rhat.")
 
     require(nimble)
     if(!is.na(SamplerSourcePath)) require(nimbleHMC) # Included this option for NUTS sampler, which required HMC
