@@ -82,8 +82,10 @@ RunNimbleParallel <-
       if(check.blocks$nblks > nblks.previous) {
         nblks.previous <- check.blocks$nblks
         
-        mod.out <- gatherNimble(read.path = dump.path, burnin = nb, ni.block = ni,
-                                base.thin = nt, max.samples.saved = max.samples.saved)
+        mod.out <- suppressWarnings(
+          gatherNimble(read.path = dump.path, burnin = nb, ni.block = ni,
+                       base.thin = nt, max.samples.saved = max.samples.saved)
+        )
         mod.check <- checkNimble(mod.out$out, Rht.required = Rht.required, neff.required = neff.required,
                                  par.ignore = par.ignore, par.dontign = par.dontign,
                                  par.fuzzy.track = par.fuzzy.track, fuzzy.threshold = fuzzy.threshold,
