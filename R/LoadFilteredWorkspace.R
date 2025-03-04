@@ -1,4 +1,4 @@
-loadFilteredWorkspace <- function(workspace, objects.exclude = c(), target.envir) {
+LoadFilteredWorkspace <- function(workspace, objects.exclude = c(), target.envir) {
   
   # Create a temporary environment
   temp_env <- new.env()
