@@ -9,7 +9,7 @@ LoadFilteredWorkspace <- function(workspace, objects.exclude = c(), target.envir
   # Remove unwanted objects from the temporary environment
   rm(list = objects.exclude, envir = temp_env)
   
-  # Copy remaining objects to the global environment
+  # Copy remaining objects to the target environment
   list2env(as.list(temp_env), envir = target.envir)
   
   # Clean up
