@@ -1,10 +1,10 @@
 Package: FunctionsBCR
 Type: Package
 Title: General utility functions for Bird Conservancy of the Rockies
-Version: 2.0
-Date: 2024-12-17
+Version: 2.1
+Date: 2025-31-03
 Author: Quresh S. Latif
 Maintainer: Stronger together <quresh.latif@birdconservancy.org>
 Description: General purpose utility functions for science and data operations at Bird Conservancy of the Rockies
-Suggests: mcmcOutput, nimble, processx, dplyr, stringr, suncalc, lutz, sf, coda
+Suggests: dplyr, stringr, suncalc, lutz, sf, coda
 License: None
