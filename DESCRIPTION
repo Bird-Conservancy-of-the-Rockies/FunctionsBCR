@@ -6,5 +6,5 @@ Date: 2025-31-03
 Author: Quresh S. Latif
 Maintainer: Stronger together <quresh.latif@birdconservancy.org>
 Description: General purpose utility functions for science and data operations at Bird Conservancy of the Rockies
-Suggests: dplyr, stringr, suncalc, lutz, sf, coda
+Suggests: dplyr, stringr, suncalc, lutz, sf
 License: None
