@@ -7,6 +7,7 @@
 ```logit``` Converts a probability to the logit scale<br>
 ```expit``` Converts a logit probability to the probability scale<br>
 ```Derive_regression``` Applies linear model to series of parameters to derive their relationship with specified covariate. Typical use will be to derive trend for yearly population (e.g., occupancy or abundance) estimates<br>
+```mcmcList_to_mcmcOutput``` Converts mcmcList to mcmcOutput object<br>
 
 ### Data processing & manipulation
 ```Impute_missing_covs_rf``` Imputes missing covariate values using a random forest informed by existing values of other covariates (maintains correlation structure of a set of covariates)<br>
