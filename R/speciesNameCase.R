@@ -1,39 +1,58 @@
 speciesNameCase <- function(rawNames) {
   require(stringr)
   
-  # output vector
+  # ---- helper functions ----
+  
+  # First-word rule: hyphen → lower
+  fix_first <- function(w) {
+    w <- str_replace(w, "^[a-z]", toupper)
+    w <- str_replace_all(w, "(?<=-)[a-z]", tolower)
+    w <- str_replace_all(w, "(?<=['])[a-z]", tolower)
+    w
+  }
+  
+  # Middle-word rule (for >2 words): also hyphen → lower
+  fix_middle <- function(w) {
+    w <- str_replace(w, "^[a-z]", toupper)
+    w <- str_replace_all(w, "(?<=-)[a-z]", tolower)
+    w <- str_replace_all(w, "(?<=['])[a-z]", tolower)
+    w
+  }
+  
+  # Last-word rule: hyphen → UPPER
+  fix_last <- function(w) {
+    w <- str_replace(w, "^[a-z]", toupper)
+    w <- str_replace_all(w, "(?<=-)[a-z]", toupper)
+    w <- str_replace_all(w, "(?<=['])[a-z]", tolower)
+    w
+  }
+  
+  # ---- main loop ----
   out <- character(length(rawNames))
   
   for (i in seq_along(rawNames)) {
     s <- rawNames[i]
-    
-    # lower-case everything first
     s <- str_to_lower(s)
     
-    # split into up to two parts
-    parts <- str_split(s, "\\s+", n = 2)[[1]]
+    parts <- str_split(s, "\\s+")[[1]]
+    n <- length(parts)
     
-    # --- First word rules ---
-    fix_first <- function(w) {
-      w <- str_replace(w, "^[a-z]", toupper)             # capitalize first letter
-      w <- str_replace_all(w, "(?<=-)[a-z]", tolower)    # after hyphen → lower
-      w <- str_replace_all(w, "(?<=['])[a-z]", tolower)  # after apostrophe → lower
-      w
-    }
-    
-    # --- Second word rules ---
-    fix_second <- function(w) {
-      w <- str_replace(w, "^[a-z]", toupper)             # capitalize first letter
-      w <- str_replace_all(w, "(?<=-)[a-z]", toupper)    # after hyphen → UPPER
-      w <- str_replace_all(w, "(?<=['])[a-z]", tolower)  # after apostrophe → lower
-      w
-    }
-    
-    # Apply rules depending on number of words
-    if (length(parts) == 1) {
+    if (n == 1) {
+      # Single word → treat like first word
       fixed <- fix_first(parts[1])
+      
+    } else if (n == 2) {
+      # Two words → first + last rules
+      fixed <- paste(fix_first(parts[1]),
+                     fix_last(parts[2]))
+      
     } else {
-      fixed <- paste(fix_first(parts[1]), fix_second(parts[2]))
+      # Three or more words
+      first <- fix_first(parts[1])
+      middles <- vapply(parts[2:(n-1)], fix_middle, FUN.VALUE = character(1))
+      last <- fix_last(parts[n])
+      
+      fixed <- paste(c(first, middles, last), collapse = " ")
     }
     
     out[i] <- fixed

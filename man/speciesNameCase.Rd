@@ -1,7 +1,7 @@
 \name{speciesNameCase}
 \alias{speciesNameCase}
 \title{Format species common names to match those in the Bird Conservancy database}
-\description{This function formats the capitalization of species common names to match those in the Bird Conservancy database and the standard AOU formatting scheme whereby the first letter of each word in the name is capitalized, and letters after hyphens in the first word are lower case but after hyphens in the second word are capital.}
+\description{This function formats the capitalization of species common names to match those in the Bird Conservancy database and the standard AOU formatting scheme whereby the first letter of each word in the name is capitalized, and letters after hyphens are lower case in all but the last word, and capital after hyphens in the last word.}
 \usage{
 speciesNameCase(rawNames)
 }
